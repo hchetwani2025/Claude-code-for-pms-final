@@ -1,362 +1,534 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<title>Quiet responders — clickable concept</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiet responders — click-through</title>
 <style>
+  /* One spacing scale, three type sizes, shared by console and phone. */
   :root {
-    --console-bg: #12161c;
-    --console-panel: #1b212b;
-    --console-panel-2: #222a36;
-    --console-border: #2c3543;
-    --console-text: #e7ebf1;
-    --console-muted: #8b96a5;
-    --accent-quiet: #e0a72e;
-    --accent-busy: #4fb0e8;
-    --accent-ok: #4fbf7b;
-    --phone-bg: #f4f2ee;
-    --phone-panel: #ffffff;
-    --phone-text: #1c1c1c;
-    --phone-muted: #6b6b6b;
-    --phone-accent: #b5502f;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+    --t-sm: 12px; --t-md: 14px; --t-lg: 28px;
+    --radius: 10px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --blue: #3b8ee0; --amber: #e0a72e; --green: #4fbf7b; --orange: #eb6834;
   }
+  :root[data-theme="dark"] {
+    --bg: #05070a; --panel: #12161c; --card: #1b212b; --card-2: #222a36;
+    --border: #2c3543; --text: #e7ebf1; --muted: #8b96a5;
+    --note-bg: rgba(224,167,46,0.12); --note-border: rgba(224,167,46,0.4); --note-text: #f0cf8f;
+    --calm-bg: rgba(59,142,224,0.10); --calm-border: rgba(59,142,224,0.35); --calm-text: #a9d3f0;
+    --btn: #3b7dd8; --btn-text: #fff;
+  }
+  :root[data-theme="light"] {
+    --bg: #f3f2ee; --panel: #ffffff; --card: #fafaf8; --card-2: #f1f0ec;
+    --border: #dedbd2; --text: #16181c; --muted: #6b6b66;
+    --note-bg: #fff6e6; --note-border: #ecd8ab; --note-text: #6b4c10;
+    --calm-bg: #eaf3fc; --calm-border: #bcd7f2; --calm-text: #234a75;
+    --btn: #2a78d6; --btn-text: #fff;
+  }
+
   * { box-sizing: border-box; }
+  html, body { margin: 0; overflow-x: hidden; }
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    background: #05070a;
-    color: var(--console-text);
-    padding: 28px 16px 60px;
+    font-family: var(--font); font-size: var(--t-md); line-height: 1.45;
+    background: var(--bg); color: var(--text);
+    padding: var(--s4) var(--s4) 48px;
+    transition: background-color 200ms, color 200ms;
   }
-  h1.page-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #cfd6de;
-    text-align: center;
-    margin: 0 0 4px;
-    letter-spacing: 0.02em;
-  }
-  p.page-sub {
-    text-align: center;
-    color: #6b7684;
-    font-size: 13px;
-    margin: 0 0 24px;
-  }
-  .tabs {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 28px;
-  }
-  .tab-btn {
-    background: #1b212b;
-    color: #aeb8c4;
-    border: 1px solid #2c3543;
-    padding: 9px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    font-weight: 500;
-  }
-  .tab-btn.active {
-    background: #3b7dd8;
-    color: #fff;
-    border-color: #3b7dd8;
-  }
-  .stage { max-width: 760px; margin: 0 auto; }
-  .view { display: none; }
-  .view.active { display: block; }
+  button { font: inherit; cursor: pointer; }
+  button, .row-btn { transition: background-color 200ms, color 200ms, border-color 200ms; }
 
-  /* ---- Console view ---- */
-  .console-shell {
-    background: var(--console-bg);
-    border: 1px solid var(--console-border);
-    border-radius: 14px;
-    padding: 22px;
-  }
-  .console-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 1px solid var(--console-border);
-    padding-bottom: 14px;
-    margin-bottom: 18px;
-  }
-  .console-header .who { font-size: 14px; font-weight: 600; }
-  .console-header .shift { font-size: 12px; color: var(--console-muted); }
-  .cards { display: flex; gap: 16px; flex-wrap: wrap; }
-  .card {
-    flex: 1 1 280px;
-    background: var(--console-panel);
-    border: 1px solid var(--console-border);
-    border-radius: 10px;
-    padding: 16px;
-  }
-  .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .card-name { font-size: 15px; font-weight: 600; }
-  .badge {
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: 999px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-  }
-  .badge.available { background: rgba(79,191,123,0.15); color: var(--accent-ok); }
-  .card-tags { font-size: 11px; color: var(--console-muted); margin-bottom: 14px; }
+  /* ---- page chrome ---- */
+  .top { max-width: 820px; margin: 0 auto var(--s5); display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; justify-content: space-between; }
+  .top h1 { font-size: var(--t-md); font-weight: 600; margin: 0; }
+  .top .sub { font-size: var(--t-sm); color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { background: transparent; color: var(--muted); border: 0; padding: var(--s2) var(--s3); font-size: var(--t-sm); font-weight: 500; }
+  .seg button.on { background: var(--btn); color: var(--btn-text); }
+  .ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: var(--s2) var(--s3); font-size: var(--t-sm); }
+  .ghost:hover { color: var(--text); }
+  .stage { max-width: 820px; margin: 0 auto; }
+  .view { display: none; } .view.on { display: block; }
+  .caption { margin-top: var(--s4); font-size: var(--t-sm); color: var(--muted); text-align: center; }
 
-  .offer-line { font-size: 13px; color: var(--console-muted); margin-bottom: 3px; }
-  .offer-count { font-size: 26px; font-weight: 700; color: var(--console-text); }
-  .offer-usual { font-size: 12px; color: var(--console-muted); }
+  /* ---- console ---- */
+  .console { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: var(--s4); }
+  .console-head { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; justify-content: space-between; padding-bottom: var(--s3); border-bottom: 1px solid var(--border); margin-bottom: var(--s4); }
+  .console-head .who { font-weight: 600; }
+  .console-head .when { font-size: var(--t-sm); color: var(--muted); }
+  .cards { display: flex; flex-wrap: wrap; gap: var(--s4); }
+  .card { flex: 1 1 280px; max-width: calc(50% - var(--s2)); min-width: 0; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--s4); }
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+  .name { font-weight: 600; }
+  .badge { font-size: var(--t-sm); padding: 2px var(--s2); border-radius: 999px; font-weight: 600; background: rgba(79,191,123,0.15); color: var(--green); white-space: nowrap; }
+  .chip { font-size: var(--t-sm); color: var(--muted); }
+  .tags { font-size: var(--t-sm); color: var(--muted); margin: var(--s1) 0 var(--s3); }
+  .label { font-size: var(--t-sm); color: var(--muted); }
+  .num { font-size: var(--t-lg); font-weight: 700; line-height: 1.1; }
+  .num.quiet { color: var(--amber); } .num.busy { color: var(--blue); }
+  .spark { display: block; width: 100%; height: 34px; margin: var(--s2) 0 var(--s3); }
+  .why-btn { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: var(--s2) var(--s3); font-size: var(--t-sm); }
+  .why-btn:hover { border-color: var(--btn); }
+  .why { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 200ms ease, opacity 200ms ease; }
+  .why.open { max-height: 320px; opacity: 1; }
+  .why-in { padding-top: var(--s3); margin-top: var(--s3); border-top: 1px dashed var(--border); font-size: var(--t-sm); }
+  .kv { display: flex; justify-content: space-between; color: var(--muted); padding: 2px 0; }
+  .kv b { color: var(--text); }
+  .note { margin-top: var(--s2); padding: var(--s2) var(--s3); border-radius: 8px; border: 1px solid var(--note-border); background: var(--note-bg); color: var(--note-text); }
+  .note.calm { border-color: var(--calm-border); background: var(--calm-bg); color: var(--calm-text); }
+  .act { margin-top: var(--s2); width: 100%; background: var(--btn); color: var(--btn-text); border: 0; border-radius: 8px; padding: var(--s2) var(--s3); font-size: var(--t-sm); font-weight: 600; }
+  .act.done { background: var(--green); color: #0b2a17; }
+  .act-line { font-size: var(--t-sm); color: var(--muted); margin-top: var(--s1); min-height: 16px; }
+  .compare { margin-top: var(--s4); text-align: center; }
+  .compare button { background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: var(--t-sm); }
+  .compare button:hover { color: var(--text); }
 
-  .why-btn {
-    margin-top: 12px;
-    background: transparent;
-    border: 1px solid var(--console-border);
-    color: #9db3d6;
-    font-size: 12px;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 100%;
-  }
-  .why-btn:hover { border-color: #3b7dd8; }
-  .why-panel {
-    display: none;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px dashed var(--console-border);
-    font-size: 12px;
-  }
-  .why-panel.open { display: block; }
-  .why-row { display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--console-muted); }
-  .why-row b { color: var(--console-text); font-weight: 600; }
-  .why-note {
-    margin-top: 10px;
-    background: rgba(224,167,46,0.1);
-    border: 1px solid rgba(224,167,46,0.35);
-    color: #f0cf8f;
-    padding: 8px 10px;
-    border-radius: 6px;
-    line-height: 1.4;
-  }
-  .why-note.calm {
-    background: rgba(79,176,232,0.08);
-    border-color: rgba(79,176,232,0.3);
-    color: #a9d3f0;
-  }
+  /* roster */
+  .roster-tools { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin-bottom: var(--s3); font-size: var(--t-sm); color: var(--muted); }
+  .roster { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .r-head, .r-row { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) 56px 56px minmax(0,1.2fr) 64px; gap: var(--s2); align-items: center; padding: var(--s2) var(--s3); }
+  .r-head { font-size: var(--t-sm); color: var(--muted); background: var(--card-2); }
+  .r-row { border-top: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: var(--t-sm); }
+  .r-row:hover { background: var(--card-2); }
+  .r-row .name { font-size: var(--t-sm); }
+  .r-row .n { font-weight: 700; }
+  .r-row .muted, .r-head .muted { color: var(--muted); }
+  .r-row span, .r-head span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { display: inline-block; font-size: var(--t-sm); padding: 1px var(--s2); border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .pill.miss { border-color: var(--note-border); background: var(--note-bg); color: var(--note-text); }
+  .pill.down { border-color: rgba(235,104,52,0.4); background: rgba(235,104,52,0.10); color: var(--orange); }
+  .pill.ok { border-color: rgba(79,191,123,0.35); background: rgba(79,191,123,0.10); color: var(--green); }
+  .pill .short { display: none; }
+  .r-spark { width: 64px; height: 22px; }
+  .r-detail { border-top: 1px solid var(--border); background: var(--card); padding: 0 var(--s3); }
+  .r-detail .why-in { border-top: 0; margin-top: 0; padding: var(--s2) 0 var(--s3); }
+  .foot { font-size: var(--t-sm); color: var(--muted); margin-top: var(--s3); }
 
-  .quiet .offer-count { color: var(--accent-quiet); }
-  .busy .offer-count { color: var(--accent-busy); }
+  /* ---- phone ---- */
+  .phone-tools { display: flex; justify-content: center; margin-bottom: var(--s4); }
+  .phone { width: 320px; max-width: 100%; margin: 0 auto; background: #fff; border-radius: 32px; border: 8px solid #1c1c1c; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.45); }
+  .screen { background: #f4f2ee; color: #1c1c1c; min-height: 560px; padding: var(--s4) var(--s4) var(--s5); display: none; }
+  .screen.on { display: block; }
+  .p-status { font-size: var(--t-sm); color: #6b6b6b; text-align: center; }
+  .p-app { font-size: var(--t-sm); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #b5502f; text-align: center; margin: var(--s1) 0 var(--s4); }
+  .p-title { font-weight: 600; margin-bottom: var(--s3); }
+  .stat { text-align: center; margin-bottom: var(--s4); }
+  .stat .num { color: #1c1c1c; }
+  .stat .label, .stat .usual { font-size: var(--t-sm); color: #6b6b6b; }
+  .p-box { background: #fff; border: 1px solid #e4e0d8; border-radius: var(--radius); padding: var(--s3) var(--s4); margin-bottom: var(--s3); }
+  .p-row { display: flex; justify-content: space-between; align-items: center; padding: var(--s1) 0; font-size: var(--t-md); }
+  .p-row + .p-row { border-top: 1px solid #efece5; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: var(--s2); }
+  .dot.taken { background: #4a8f5c; } .dot.down { background: #b5502f; } .dot.miss { background: #d1a13a; }
+  .p-note { background: #fff6e6; border: 1px solid #ecd8ab; border-radius: var(--radius); padding: var(--s3) var(--s4); font-size: var(--t-sm); color: #5c4a24; margin-bottom: var(--s4); }
+  .p-note.ok { background: #eaf6ee; border-color: #bfe0c9; color: #1f4d2e; }
+  .ready { display: block; width: 100%; background: #b5502f; color: #fff; border: 0; padding: var(--s3); border-radius: var(--radius); font-weight: 600; }
+  .ready.done { background: #4a8f5c; }
+  .ready:disabled { background: #d8d4cc; color: #6b6b6b; cursor: default; }
+  .ready-line { text-align: center; font-size: var(--t-sm); color: #6b6b6b; margin-top: var(--s2); min-height: 16px; }
+  .p-tabs { display: flex; border-top: 1px solid #e4e0d8; background: #fff; }
+  .p-tabs button { flex: 1; background: none; border: 0; padding: var(--s3); font-size: var(--t-sm); color: #6b6b6b; }
+  .p-tabs button.on { color: #b5502f; font-weight: 600; }
 
-  .console-caption {
-    margin-top: 18px;
-    font-size: 12px;
-    color: #5c6674;
-    text-align: center;
-  }
+  /* offer screen */
+  .offer { text-align: center; }
+  .offer .what { font-weight: 600; margin-bottom: var(--s1); }
+  .offer .where { font-size: var(--t-sm); color: #6b6b6b; margin-bottom: var(--s4); }
+  .ring { width: 150px; height: 150px; margin: 0 auto var(--s3); position: relative; }
+  .ring svg { width: 150px; height: 150px; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 8; }
+  .ring .track { stroke: #e4e0d8; }
+  .ring .bar { stroke: #b5502f; stroke-linecap: round; }
+  .ring .secs { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring .secs .num { color: #1c1c1c; }
+  .ring .secs .label { font-size: var(--t-sm); color: #6b6b6b; }
+  .offer-btns { display: flex; gap: var(--s2); margin-bottom: var(--s3); }
+  .offer-btns button { flex: 1; padding: var(--s3); border-radius: var(--radius); border: 1px solid #e4e0d8; background: #fff; font-weight: 600; }
+  .offer-btns .yes { background: #4a8f5c; color: #fff; border-color: #4a8f5c; }
+  .offer-btns button:disabled { opacity: 0.45; cursor: default; }
+  .play { display: block; width: 100%; background: #1c1c1c; color: #fff; border: 0; padding: var(--s3); border-radius: var(--radius); font-weight: 600; }
+  .speed { background: none; border: 1px solid #e4e0d8; border-radius: 999px; padding: 2px var(--s2); font-size: var(--t-sm); color: #6b6b6b; margin-left: var(--s2); }
+  .speed.on { background: #1c1c1c; color: #fff; border-color: #1c1c1c; }
+  .result { display: none; }
+  .result.on { display: block; }
+  .result .big { font-weight: 600; margin-bottom: var(--s2); }
+  .replay { background: none; border: 0; color: #6b6b6b; text-decoration: underline; font-size: var(--t-sm); }
 
-  /* ---- Phone view ---- */
-  .phone-frame {
-    width: 320px;
-    margin: 0 auto;
-    background: var(--phone-panel);
-    border-radius: 32px;
-    border: 8px solid #1c1c1c;
-    overflow: hidden;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-  }
-  .phone-screen {
-    background: var(--phone-bg);
-    color: var(--phone-text);
-    min-height: 560px;
-    padding: 20px 18px 26px;
-  }
-  .phone-status { font-size: 11px; color: var(--phone-muted); text-align: center; margin-bottom: 14px; }
-  .phone-app-name { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--phone-accent); text-align: center; margin-bottom: 18px; }
-
-  .stat-block { text-align: center; margin-bottom: 22px; }
-  .stat-number { font-size: 44px; font-weight: 700; line-height: 1; }
-  .stat-label { font-size: 12px; color: var(--phone-muted); margin-top: 6px; }
-  .stat-usual { font-size: 11px; color: var(--phone-muted); margin-top: 2px; }
-
-  .breakdown {
-    background: var(--phone-panel);
-    border: 1px solid #e4e0d8;
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 16px;
-  }
-  .breakdown-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; }
-  .breakdown-row + .breakdown-row { border-top: 1px solid #efece5; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
-  .dot.accepted { background: #4a8f5c; }
-  .dot.declined { background: #b5502f; }
-  .dot.missed { background: #d1a13a; }
-
-  .explain-box {
-    background: #fff6e6;
-    border: 1px solid #ecd8ab;
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 12.5px;
-    line-height: 1.5;
-    color: #5c4a24;
-    margin-bottom: 20px;
-  }
-
-  .ready-btn {
-    display: block;
-    width: 100%;
-    background: var(--phone-accent);
-    color: #fff;
-    border: none;
-    padding: 13px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .ready-btn.done {
-    background: #4a8f5c;
-  }
-  .ready-note {
-    text-align: center;
-    font-size: 11.5px;
-    color: var(--phone-muted);
-    margin-top: 10px;
-    min-height: 14px;
-  }
-
-  .phone-caption {
-    margin-top: 18px;
-    font-size: 12px;
-    color: #5c6674;
-    text-align: center;
+  @media (max-width: 600px) {
+    body { padding: var(--s3) var(--s3) 40px; }
+    .cards { flex-direction: column; }
+    .card { flex: 1 1 auto; max-width: none; }
+    .pill .long { display: none; } .pill .short { display: inline; }
+    .r-head, .r-row { grid-template-columns: minmax(0,1.5fr) 44px minmax(0,1.3fr) 56px; }
+    .r-head .hide-sm, .r-row .hide-sm { display: none; }
+    .r-spark { width: 56px; }
   }
 </style>
 </head>
 <body>
 
-  <h1 class="page-title">Quiet responders — what changes for Mite</h1>
-  <p class="page-sub">Rough click-through · not final visual design</p>
-
-  <div class="tabs">
-    <button class="tab-btn active" data-view="console">Kip's console</button>
-    <button class="tab-btn" data-view="phone">Mite's phone</button>
+<div class="top">
+  <div>
+    <h1>Quiet responders — click-through</h1>
+    <div class="sub">Concept, not a spec. Numbers are from <code>callout-history.csv</code>.</div>
   </div>
+  <div style="display:flex; gap:var(--s2); align-items:center;">
+    <div class="seg" id="viewSeg">
+      <button class="on" data-view="console">Kip's console</button>
+      <button data-view="phone">Mite's phone</button>
+    </div>
+    <button class="ghost" id="themeBtn" title="Kip asked for dark mode. It's the default.">Light</button>
+  </div>
+</div>
 
-  <div class="stage">
+<div class="stage">
 
-    <!-- CONSOLE VIEW -->
-    <div class="view active" id="view-console">
-      <div class="console-shell">
-        <div class="console-header">
+  <!-- ================= CONSOLE ================= -->
+  <div class="view on" id="view-console">
+    <div class="console">
+      <div class="console-head">
+        <div>
           <div class="who">Coverage — Kip</div>
-          <div class="shift">Tue 22 Sep · 23:10</div>
+          <div class="when">Tue 22 Sep · 23:10</div>
         </div>
-        <div class="cards">
-
-          <div class="card quiet">
-            <div class="card-top">
-              <div class="card-name">Meteor Mite</div>
-              <span class="badge available">Available</span>
-            </div>
-            <div class="card-tags">flight · cold-weather</div>
-
-            <div class="offer-line">Offers this week</div>
-            <div class="offer-count">1</div>
-            <div class="offer-usual">usual: ~11</div>
-
-            <button class="why-btn" onclick="toggleWhy(this)">Why?</button>
-            <div class="why-panel">
-              <div class="why-row"><span>Accepted</span><b>0</b></div>
-              <div class="why-row"><span>Declined</span><b>0</b></div>
-              <div class="why-row"><span>Missed window</span><b>4</b></div>
-              <div class="why-note">Mostly missed-window, not declines. Routing priority has been dropping since 12 Aug — this is why the card looks quiet.</div>
-            </div>
-          </div>
-
-          <div class="card busy">
-            <div class="card-top">
-              <div class="card-name">The Gale</div>
-              <span class="badge available">Available</span>
-            </div>
-            <div class="card-tags">structural-entry · hazmat-tolerant</div>
-
-            <div class="offer-line">Offers this week</div>
-            <div class="offer-count">21</div>
-            <div class="offer-usual">usual: ~13</div>
-
-            <button class="why-btn" onclick="toggleWhy(this)">Why?</button>
-            <div class="why-panel">
-              <div class="why-row"><span>Accepted</span><b>16</b></div>
-              <div class="why-row"><span>Declined</span><b>2</b></div>
-              <div class="why-row"><span>Missed window</span><b>3</b></div>
-              <div class="why-note calm">Steady acceptance. Ranking highest on proximity for this week's callouts.</div>
-            </div>
-          </div>
-
-        </div>
-        <div class="console-caption">Same line already on the card today — just answers the question Kip can't currently ask it.</div>
-      </div>
-    </div>
-
-    <!-- PHONE VIEW -->
-    <div class="view" id="view-phone">
-      <div class="phone-frame">
-        <div class="phone-screen">
-          <div class="phone-status">Meteor Mite · cover identity only</div>
-          <div class="phone-app-name">Rook Dispatch</div>
-
-          <div class="stat-block">
-            <div class="stat-number">1</div>
-            <div class="stat-label">callout offer this week</div>
-            <div class="stat-usual">usually about 11</div>
-          </div>
-
-          <div class="breakdown">
-            <div class="breakdown-row"><span><span class="dot accepted"></span>Accepted</span><span>0</span></div>
-            <div class="breakdown-row"><span><span class="dot declined"></span>Declined</span><span>0</span></div>
-            <div class="breakdown-row"><span><span class="dot missed"></span>Missed window</span><span>4</span></div>
-          </div>
-
-          <div class="explain-box">
-            You haven't turned anything down. Your last 4 offers closed before you could answer — the response window is 60 seconds. Missed windows lower how often you're asked next, the same as a decline would. That's why offers have slowed.
-          </div>
-
-          <button class="ready-btn" id="readyBtn" onclick="markReady()">I'm ready</button>
-          <div class="ready-note" id="readyNote"></div>
+        <div class="seg" id="rosterSeg">
+          <button class="on" data-mode="cards">Kip's cards (2)</button>
+          <button data-mode="roster">All responders (16)</button>
         </div>
       </div>
-      <div class="phone-caption">"I'm ready" refreshes standing directly — no need to wait on an offer to prove it.</div>
-    </div>
 
+      <!-- cards -->
+      <div id="cards">
+        <div class="cards" id="cardGrid"></div>
+        <div class="compare"><button id="compareBtn">Compare with a responder who turns work down →</button></div>
+        <div class="caption">Same coverage card Kip already has. The count is the only big number; "Why?" holds the rest.</div>
+      </div>
+
+      <!-- roster -->
+      <div id="roster" style="display:none">
+        <div class="roster-tools">
+          <span>Sort:</span>
+          <div class="seg" id="sortSeg">
+            <button class="on" data-sort="quiet">Quiet, not turning down</button>
+            <button data-sort="week">This week</button>
+            <button data-sort="name">Name</button>
+          </div>
+        </div>
+        <div class="roster" id="rosterList"></div>
+        <div class="foot">16 responders in the export, every handler. The turned-down vs. gone-before-answered split is illustrative — the export doesn't record it. That's open question #1 in the brief.</div>
+      </div>
+    </div>
   </div>
+
+  <!-- ================= PHONE ================= -->
+  <div class="view" id="view-phone">
+    <div class="phone-tools">
+      <div class="seg" id="weekSeg">
+        <button class="on" data-week="quiet">Quiet week (31 Aug)</button>
+        <button data-week="normal">Normal week (3 Aug)</button>
+      </div>
+    </div>
+
+    <div class="phone">
+      <!-- history -->
+      <div class="screen on" id="scr-history">
+        <div class="p-status">Meteor Mite · cover identity only</div>
+        <div class="p-app">Rook Dispatch</div>
+        <div class="p-title">Your history</div>
+        <div class="stat">
+          <div class="num" id="pNum">1</div>
+          <div class="label" id="pNumLabel">callout offered this week</div>
+          <div class="usual">usual pace about 11</div>
+        </div>
+        <div class="p-box">
+          <div class="p-row"><span><span class="dot taken"></span>Taken</span><span id="pTaken">0</span></div>
+          <div class="p-row"><span><span class="dot down"></span>Turned down</span><span id="pDown">0</span></div>
+          <div class="p-row"><span><span class="dot miss"></span>Gone before you answered</span><span id="pMiss">4</span></div>
+        </div>
+        <div class="p-note" id="pNote"></div>
+        <button class="ready" id="readyBtn">I'm ready</button>
+        <div class="ready-line" id="readyLine"></div>
+      </div>
+
+      <!-- offer -->
+      <div class="screen offer" id="scr-offer">
+        <div class="p-status">Meteor Mite · cover identity only</div>
+        <div class="p-app">Rook Dispatch</div>
+        <div id="offerLive">
+          <div class="what">Callout — structural fire, Riverside</div>
+          <div class="where">needs cold-weather · 14 min away · offered to you</div>
+          <div class="ring">
+            <svg viewBox="0 0 150 150"><circle class="track" cx="75" cy="75" r="66"/><circle class="bar" id="ringBar" cx="75" cy="75" r="66"/></svg>
+            <div class="secs"><div class="num" id="secs">60</div><div class="label">seconds to answer</div></div>
+          </div>
+          <div class="offer-btns">
+            <button class="yes" id="btnTake" disabled>Take it</button>
+            <button id="btnDown" disabled>Turn down</button>
+          </div>
+          <button class="play" id="playBtn">▶ Play a 60-second offer</button>
+          <div class="ready-line">Real time <button class="speed" id="speedBtn">×10</button></div>
+        </div>
+        <div class="result" id="offerResult">
+          <div class="big" id="resTitle"></div>
+          <div class="p-note" id="resNote"></div>
+          <button class="replay" id="replayBtn">Replay</button>
+        </div>
+      </div>
+
+      <div class="p-tabs">
+        <button class="on" data-scr="history">Your history</button>
+        <button data-scr="offer">Offer</button>
+      </div>
+    </div>
+    <div class="caption" id="phoneCaption">Ironvale asked her handler for a way to see her own history (T-008). There isn't one. This is it.</div>
+  </div>
+
+</div>
 
 <script>
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('view-' + btn.dataset.view).classList.add('active');
-    });
+  // ---------- data (00-rook/data/callout-history.csv, weeks of 29 Jun → 31 Aug) ----------
+  const ROSTER = [
+    {name:"Meteor Mite",handler:"Kip",sent:[11,12,10,11,12,11,10,4,2,1],taken:[7,9,6,7,9,8,4,1,0,0],usual:11,tags:"flight · cold-weather"},
+    {name:"The Gale",handler:"Kip",sent:[13,12,13,14,13,13,15,17,20,21],taken:[10,9,10,11,11,10,9,12,14,16],usual:13,tags:"structural-entry · hazmat-tolerant"},
+    {name:"Stormwrack",handler:"Renata Kovač",sent:[13,13,12,14,13,13,14,16,18,19],taken:[10,11,9,12,10,10,8,12,13,15],usual:13},
+    {name:"Farlight",handler:"Linda Pruitt",sent:[12,12,11,12,13,12,10,3,1,0],taken:[9,9,8,9,10,8,4,0,0,0],usual:12},
+    {name:"Vesper",handler:"Aunt Dot",sent:[14,13,15,14,13,14,12,5,2,1],taken:[11,10,13,11,11,12,6,1,0,0],usual:14},
+    {name:"The Undertow",handler:"Desmond Okafor",sent:[12,11,12,13,12,12,11,4,1,1],taken:[9,9,9,10,10,9,4,1,0,0],usual:12},
+    {name:"Corporal Ashgrove",handler:"Yusuf Demir",sent:[10,11,10,9,10,10,10,8,7,7],taken:[8,9,7,7,8,8,6,5,5,5],usual:10},
+    {name:"Halfmoon",handler:"Simone Fischer",sent:[11,10,11,12,11,11,11,9,8,8],taken:[8,7,8,8,9,8,6,5,5,7],usual:11},
+    {name:"Sgt. Bulwark",handler:"Halloran",sent:[9,9,10,9,8,9,10,10,11,11],taken:[7,7,8,7,5,7,5,8,7,8],usual:9},
+    {name:"The Longcast",handler:"Graham Petrov",sent:[7,7,8,7,7,7,8,8,9,9],taken:[5,5,7,5,5,5,5,6,5,7],usual:7},
+    {name:"Cindermark",handler:"Farid Haddad",sent:[9,9,8,10,9,9,10,11,12,12],taken:[7,8,6,7,7,8,6,8,8,9],usual:9},
+    {name:"The Drift",handler:"Beatrice Calloway",sent:[6,6,7,6,6,6,7,7,8,8],taken:[5,5,6,5,5,5,4,5,6,5],usual:6},
+    {name:"Nightwell",handler:"Marjorie Sung",sent:[15,14,15,16,15,15,16,18,20,21],taken:[11,10,12,12,11,12,9,14,13,15],usual:15},
+    {name:"Captain Vantage",handler:"Mr. Ambrose",sent:[12,13,12,11,12,12,13,15,17,18],taken:[10,10,8,7,9,9,8,11,13,13],usual:12},
+    {name:"Ironvale",handler:"Teresa Alvarez",sent:[8,8,9,8,7,8,9,10,11,12],taken:[6,5,8,6,5,7,5,6,8,9],usual:8},
+    {name:"Sgt. Falkirk",handler:"Owen Bramwell",sent:[10,10,11,10,9,10,11,13,15,16],taken:[9,8,8,8,7,8,7,9,11,11],usual:10,tags:"aquatic · de-escalation"},
+  ];
+
+  // Illustrative split. The export only has offered/taken; decline vs. missed is not recorded (brief, #1).
+  // Rows are this week, so they add up to the big number. "Since 4.2" (weeks of 17–31 Aug) feeds the note.
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  function split(r) {
+    const now = r.sent[9], taken = r.taken[9], notTaken = now - taken;
+    const usualShare = sum(r.sent.slice(0, 6).map((s, i) => s - r.taken[i])) / sum(r.sent.slice(0, 6));
+    const nowShare = now ? notTaken / now : 0;
+    const quiet = now < r.usual * 0.5;
+    const turningDown = !quiet && now >= r.usual * 0.8 && nowShare > usualShare + 0.08;
+    const reason = quiet ? 'miss' : (turningDown ? 'down' : 'ok');
+    const down = reason === 'miss' ? 0 : reason === 'down' ? notTaken : Math.round(notTaken * 0.6);
+    const missed = notTaken - down;
+    const since = { offered: sum(r.sent.slice(7)), taken: sum(r.taken.slice(7)) };
+    since.notTaken = since.offered - since.taken;
+    return { now, taken, down, missed, reason, since };
+  }
+  const REASON_LABEL = { miss: 'Gone before answered', down: 'Turning down', ok: 'Steady' };
+  const REASON_SHORT = { miss: 'Missed', down: 'Declines', ok: 'Steady' };
+
+  function sparkSVG(series, color, w, h) {
+    const max = Math.max(...series, 1), n = series.length;
+    const pts = series.map((v, i) => [ (i / (n - 1)) * (w - 6) + 3, h - 3 - (v / max) * (h - 8) ]);
+    const d = pts.map(p => p.join(',')).join(' ');
+    const [lx, ly] = pts[n - 1];
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <circle cx="${lx}" cy="${ly}" r="3" fill="${color}"/></svg>`;
+  }
+
+  function noteFor(r, s) {
+    if (s.reason === 'miss') return { cls: '', text: `Quiet, but not turning work down. ${s.since.notTaken} of the last ${s.since.offered} moved on before answered — the 60-second window, and each one lowers ranking the same as a turn-down.` };
+    if (s.reason === 'down') return { cls: '', text: `Offered more than usual. ${s.down} turned down this week, none gone before answered — choices, not the window. Ranking treats both the same today; that's Marcus's question.` };
+    return { cls: 'calm', text: 'On usual pace. Nothing here needs a conversation.' };
+  }
+
+  function whyPanel(r, s, idPrefix) {
+    const n = noteFor(r, s);
+    const first = r.name.split(' ').pop();
+    return `<div class="why-in">
+      <div class="kv"><span>Taken</span><b>${s.taken}</b></div>
+      <div class="kv"><span>Turned down</span><b>${s.down}</b></div>
+      <div class="kv"><span>Gone before answered</span><b>${s.missed}</b></div>
+      <div class="note ${n.cls}">${n.text}</div>
+      ${s.reason !== 'ok' ? `<button class="act" data-name="${r.name}">Check in with ${first}</button><div class="act-line"></div>` : ''}
+    </div>`;
+  }
+
+  // ---------- cards ----------
+  function cardHTML(r) {
+    const s = split(r);
+    const quiet = s.reason === 'miss';
+    const color = quiet ? 'var(--amber)' : 'var(--blue)';
+    return `<div class="card" data-name="${r.name}">
+      <div class="card-top"><span class="name">${r.name}</span><span class="badge">Available</span></div>
+      <div class="tags">${r.tags || ''} ${r.handler !== 'Kip' ? `<span class="chip">· handler ${r.handler}</span>` : ''}</div>
+      <div class="label">Callouts offered this week</div>
+      <div class="num ${quiet ? 'quiet' : 'busy'}">${s.now}</div>
+      <div class="label">usual pace ~${r.usual}</div>
+      <div class="spark">${sparkSVG(r.sent, color, 260, 34)}</div>
+      <button class="why-btn">Why?</button>
+      <div class="why">${whyPanel(r, s)}</div>
+    </div>`;
+  }
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = ROSTER.filter(r => r.handler === 'Kip').map(cardHTML).join('');
+
+  document.getElementById('compareBtn').addEventListener('click', e => {
+    const decliner = ROSTER.filter(r => split(r).reason === 'down').sort((a, b) => split(b).down - split(a).down)[0];
+    grid.insertAdjacentHTML('beforeend', cardHTML(decliner));
+    e.target.parentElement.remove();
+    document.querySelector('#rosterSeg button[data-mode="cards"]').textContent = "Kip's cards (2) + 1";
   });
 
-  function toggleWhy(btn) {
-    const panel = btn.nextElementSibling;
-    panel.classList.toggle('open');
-    btn.textContent = panel.classList.contains('open') ? 'Hide' : 'Why?';
-  }
+  document.addEventListener('click', e => {
+    const w = e.target.closest('.why-btn');
+    if (w) {
+      const p = w.nextElementSibling; p.classList.toggle('open');
+      w.textContent = p.classList.contains('open') ? 'Hide' : 'Why?';
+    }
+    const a = e.target.closest('.act');
+    if (a && !a.classList.contains('done')) {
+      a.classList.add('done');
+      const first = a.dataset.name.split(' ').pop();
+      a.textContent = `✓ Sent to ${first} · 23:12`;
+      a.nextElementSibling.textContent = `"Nothing's wrong with your record — it's the 60-second window. Keep your phone close tonight."`;
+    }
+  });
 
-  function markReady() {
-    const btn = document.getElementById('readyBtn');
-    const note = document.getElementById('readyNote');
-    btn.textContent = 'Standing refreshed';
-    btn.classList.add('done');
-    note.textContent = 'Routing priority nudged back up. Next available callout in range will reach you.';
+  // ---------- roster ----------
+  const sorts = {
+    quiet: (a, b) => (split(a).reason === 'miss' ? 0 : 1) - (split(b).reason === 'miss' ? 0 : 1) || (a.sent[9] / a.usual) - (b.sent[9] / b.usual),
+    week: (a, b) => a.sent[9] - b.sent[9],
+    name: (a, b) => a.name.localeCompare(b.name),
+  };
+  function renderRoster(sortKey) {
+    const list = document.getElementById('rosterList');
+    const rows = [...ROSTER].sort(sorts[sortKey]);
+    list.innerHTML = `<div class="r-head"><span>Responder</span><span class="hide-sm">Handler</span><span>This wk</span><span class="hide-sm">Usual</span><span>Why</span><span></span></div>` +
+      rows.map(r => {
+        const s = split(r);
+        const color = s.reason === 'miss' ? 'var(--amber)' : 'var(--blue)';
+        return `<div class="r-row" data-name="${r.name}">
+          <span class="name">${r.name}</span>
+          <span class="muted hide-sm">${r.handler}</span>
+          <span class="n">${s.now}</span>
+          <span class="muted hide-sm">~${r.usual}</span>
+          <span><span class="pill ${s.reason}"><span class="long">${REASON_LABEL[s.reason]}</span><span class="short">${REASON_SHORT[s.reason]}</span></span></span>
+          <span class="r-spark">${sparkSVG(r.sent, color, 64, 22)}</span>
+        </div>
+        <div class="r-detail why" data-for="${r.name}">${whyPanel(r, s)}</div>`;
+      }).join('');
   }
+  renderRoster('quiet');
+  document.getElementById('sortSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === b));
+    renderRoster(b.dataset.sort);
+  });
+  document.getElementById('rosterList').addEventListener('click', e => {
+    const row = e.target.closest('.r-row'); if (!row) return;
+    row.nextElementSibling.classList.toggle('open');
+  });
+  document.getElementById('rosterSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === b));
+    document.getElementById('cards').style.display = b.dataset.mode === 'cards' ? '' : 'none';
+    document.getElementById('roster').style.display = b.dataset.mode === 'roster' ? '' : 'none';
+  });
+
+  // ---------- page chrome ----------
+  document.getElementById('viewSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'view-' + b.dataset.view));
+  });
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const root = document.documentElement;
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    themeBtn.textContent = next === 'dark' ? 'Light' : 'Dark';
+  });
+
+  // ---------- phone: history ----------
+  const WEEKS = {
+    quiet:  { num: 1,  taken: 0, down: 0, miss: 1, note: "Nothing is wrong with your account. 6 of your last 7 callouts moved on before you answered — the window is 60 seconds, and each one lowers how often you're offered work, the same as turning one down.", ok: false },
+    normal: { num: 11, taken: 8, down: 1, miss: 2, note: "You're on your usual pace. Two moved on before you answered this week — that's typical, and nothing here needs fixing.", ok: true },
+  };
+  const readyBtn = document.getElementById('readyBtn'), readyLine = document.getElementById('readyLine');
+  function setWeek(k) {
+    const w = WEEKS[k];
+    document.getElementById('pNum').textContent = w.num;
+    document.getElementById('pNumLabel').textContent = w.num === 1 ? 'callout offered this week' : 'callouts offered this week';
+    document.getElementById('pTaken').textContent = w.taken;
+    document.getElementById('pDown').textContent = w.down;
+    document.getElementById('pMiss').textContent = w.miss;
+    const note = document.getElementById('pNote');
+    note.textContent = w.note; note.classList.toggle('ok', w.ok);
+    readyBtn.classList.remove('done');
+    readyBtn.disabled = w.ok;
+    readyBtn.textContent = w.ok ? 'Standing is normal' : "I'm ready";
+    readyLine.textContent = '';
+    currentWeek = k; updateCaption();
+  }
+  let currentWeek = 'quiet', currentScreen = 'history';
+  function updateCaption() {
+    const c = document.getElementById('phoneCaption');
+    if (currentScreen === 'offer') c.textContent = 'The 60 seconds Ambrose watched Captain Vantage lose with one boot on (T-001). Play it, or let it run out.';
+    else c.textContent = currentWeek === 'normal'
+      ? 'Same screen on a normal week: no warning, no button to press. The screen only asks for something when there is something to do.'
+      : 'Ironvale asked her handler for a way to see her own history (T-008). There isn\'t one. This is it.';
+  }
+  setWeek('quiet');
+  document.getElementById('weekSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === b));
+    setWeek(b.dataset.week);
+  });
+  readyBtn.addEventListener('click', () => {
+    if (readyBtn.disabled || readyBtn.classList.contains('done')) return;
+    readyBtn.classList.add('done');
+    readyBtn.textContent = 'Standing refreshed';
+    readyLine.innerHTML = 'Available again in 4h · counts like one taken callout toward your ranking<br><i>Proposed, not final — the brief lists this as undefined.</i>';
+  });
+
+  // ---------- phone: offer ----------
+  document.querySelector('.p-tabs').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + b.dataset.scr));
+    currentScreen = b.dataset.scr; updateCaption();
+  });
+  const CIRC = 2 * Math.PI * 66;
+  const ringBar = document.getElementById('ringBar'), secsEl = document.getElementById('secs');
+  ringBar.style.strokeDasharray = CIRC; ringBar.style.strokeDashoffset = 0;
+  let timer = null, left = 60, speed = 1;
+  const playBtn = document.getElementById('playBtn'), speedBtn = document.getElementById('speedBtn');
+  const btnTake = document.getElementById('btnTake'), btnDown = document.getElementById('btnDown');
+  function paint() { secsEl.textContent = Math.ceil(left); ringBar.style.strokeDashoffset = CIRC * (1 - left / 60); }
+  function endOffer(kind) {
+    clearInterval(timer); timer = null;
+    document.getElementById('offerLive').style.display = 'none';
+    const res = document.getElementById('offerResult'); res.classList.add('on');
+    const t = document.getElementById('resTitle'), n = document.getElementById('resNote');
+    if (kind === 'miss') { t.textContent = 'Moved on to the next responder.'; n.textContent = 'Recorded as: gone before you answered — not a turn-down. Today the ranking code can\'t tell the difference. That line is what the brief is about.'; n.className = 'p-note'; }
+    if (kind === 'take') { t.textContent = 'Taken. You\'re on your way.'; n.textContent = 'Counts toward your ranking. Your handler can see it now.'; n.className = 'p-note ok'; }
+    if (kind === 'down') { t.textContent = 'Turned down.'; n.textContent = 'Recorded as a turn-down. This is the one that should lower ranking — and today it does, by exactly as much as a missed window.'; n.className = 'p-note'; }
+  }
+  playBtn.addEventListener('click', () => {
+    if (timer) return;
+    left = 60; paint(); btnTake.disabled = false; btnDown.disabled = false; playBtn.textContent = 'Offer is live…';
+    timer = setInterval(() => { left -= 0.1 * speed; if (left <= 0) { left = 0; paint(); endOffer('miss'); } else paint(); }, 100);
+  });
+  speedBtn.addEventListener('click', () => { speed = speed === 1 ? 10 : 1; speedBtn.classList.toggle('on', speed === 10); });
+  btnTake.addEventListener('click', () => endOffer('take'));
+  btnDown.addEventListener('click', () => endOffer('down'));
+  document.getElementById('replayBtn').addEventListener('click', () => {
+    document.getElementById('offerResult').classList.remove('on');
+    document.getElementById('offerLive').style.display = '';
+    left = 60; paint(); btnTake.disabled = true; btnDown.disabled = true; playBtn.textContent = '▶ Play a 60-second offer';
+  });
+  paint();
 </script>
-
 </body>
 </html>
