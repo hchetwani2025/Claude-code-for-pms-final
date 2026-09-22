@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiet responders — clickable concept</title>
+<style>
+  :root {
+    --console-bg: #12161c;
+    --console-panel: #1b212b;
+    --console-panel-2: #222a36;
+    --console-border: #2c3543;
+    --console-text: #e7ebf1;
+    --console-muted: #8b96a5;
+    --accent-quiet: #e0a72e;
+    --accent-busy: #4fb0e8;
+    --accent-ok: #4fbf7b;
+    --phone-bg: #f4f2ee;
+    --phone-panel: #ffffff;
+    --phone-text: #1c1c1c;
+    --phone-muted: #6b6b6b;
+    --phone-accent: #b5502f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #05070a;
+    color: var(--console-text);
+    padding: 28px 16px 60px;
+  }
+  h1.page-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #cfd6de;
+    text-align: center;
+    margin: 0 0 4px;
+    letter-spacing: 0.02em;
+  }
+  p.page-sub {
+    text-align: center;
+    color: #6b7684;
+    font-size: 13px;
+    margin: 0 0 24px;
+  }
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+  .tab-btn {
+    background: #1b212b;
+    color: #aeb8c4;
+    border: 1px solid #2c3543;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .tab-btn.active {
+    background: #3b7dd8;
+    color: #fff;
+    border-color: #3b7dd8;
+  }
+  .stage { max-width: 760px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---- Console view ---- */
+  .console-shell {
+    background: var(--console-bg);
+    border: 1px solid var(--console-border);
+    border-radius: 14px;
+    padding: 22px;
+  }
+  .console-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--console-border);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .console-header .who { font-size: 14px; font-weight: 600; }
+  .console-header .shift { font-size: 12px; color: var(--console-muted); }
+  .cards { display: flex; gap: 16px; flex-wrap: wrap; }
+  .card {
+    flex: 1 1 280px;
+    background: var(--console-panel);
+    border: 1px solid var(--console-border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .card-name { font-size: 15px; font-weight: 600; }
+  .badge {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .badge.available { background: rgba(79,191,123,0.15); color: var(--accent-ok); }
+  .card-tags { font-size: 11px; color: var(--console-muted); margin-bottom: 14px; }
+
+  .offer-line { font-size: 13px; color: var(--console-muted); margin-bottom: 3px; }
+  .offer-count { font-size: 26px; font-weight: 700; color: var(--console-text); }
+  .offer-usual { font-size: 12px; color: var(--console-muted); }
+
+  .why-btn {
+    margin-top: 12px;
+    background: transparent;
+    border: 1px solid var(--console-border);
+    color: #9db3d6;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .why-btn:hover { border-color: #3b7dd8; }
+  .why-panel {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--console-border);
+    font-size: 12px;
+  }
+  .why-panel.open { display: block; }
+  .why-row { display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--console-muted); }
+  .why-row b { color: var(--console-text); font-weight: 600; }
+  .why-note {
+    margin-top: 10px;
+    background: rgba(224,167,46,0.1);
+    border: 1px solid rgba(224,167,46,0.35);
+    color: #f0cf8f;
+    padding: 8px 10px;
+    border-radius: 6px;
+    line-height: 1.4;
+  }
+  .why-note.calm {
+    background: rgba(79,176,232,0.08);
+    border-color: rgba(79,176,232,0.3);
+    color: #a9d3f0;
+  }
+
+  .quiet .offer-count { color: var(--accent-quiet); }
+  .busy .offer-count { color: var(--accent-busy); }
+
+  .console-caption {
+    margin-top: 18px;
+    font-size: 12px;
+    color: #5c6674;
+    text-align: center;
+  }
+
+  /* ---- Phone view ---- */
+  .phone-frame {
+    width: 320px;
+    margin: 0 auto;
+    background: var(--phone-panel);
+    border-radius: 32px;
+    border: 8px solid #1c1c1c;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  }
+  .phone-screen {
+    background: var(--phone-bg);
+    color: var(--phone-text);
+    min-height: 560px;
+    padding: 20px 18px 26px;
+  }
+  .phone-status { font-size: 11px; color: var(--phone-muted); text-align: center; margin-bottom: 14px; }
+  .phone-app-name { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--phone-accent); text-align: center; margin-bottom: 18px; }
+
+  .stat-block { text-align: center; margin-bottom: 22px; }
+  .stat-number { font-size: 44px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--phone-muted); margin-top: 6px; }
+  .stat-usual { font-size: 11px; color: var(--phone-muted); margin-top: 2px; }
+
+  .breakdown {
+    background: var(--phone-panel);
+    border: 1px solid #e4e0d8;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .breakdown-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; }
+  .breakdown-row + .breakdown-row { border-top: 1px solid #efece5; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+  .dot.accepted { background: #4a8f5c; }
+  .dot.declined { background: #b5502f; }
+  .dot.missed { background: #d1a13a; }
+
+  .explain-box {
+    background: #fff6e6;
+    border: 1px solid #ecd8ab;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #5c4a24;
+    margin-bottom: 20px;
+  }
+
+  .ready-btn {
+    display: block;
+    width: 100%;
+    background: var(--phone-accent);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ready-btn.done {
+    background: #4a8f5c;
+  }
+  .ready-note {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--phone-muted);
+    margin-top: 10px;
+    min-height: 14px;
+  }
+
+  .phone-caption {
+    margin-top: 18px;
+    font-size: 12px;
+    color: #5c6674;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+  <h1 class="page-title">Quiet responders — what changes for Mite</h1>
+  <p class="page-sub">Rough click-through · not final visual design</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-view="console">Kip's console</button>
+    <button class="tab-btn" data-view="phone">Mite's phone</button>
+  </div>
+
+  <div class="stage">
+
+    <!-- CONSOLE VIEW -->
+    <div class="view active" id="view-console">
+      <div class="console-shell">
+        <div class="console-header">
+          <div class="who">Coverage — Kip</div>
+          <div class="shift">Tue 22 Sep · 23:10</div>
+        </div>
+        <div class="cards">
+
+          <div class="card quiet">
+            <div class="card-top">
+              <div class="card-name">Meteor Mite</div>
+              <span class="badge available">Available</span>
+            </div>
+            <div class="card-tags">flight · cold-weather</div>
+
+            <div class="offer-line">Offers this week</div>
+            <div class="offer-count">1</div>
+            <div class="offer-usual">usual: ~11</div>
+
+            <button class="why-btn" onclick="toggleWhy(this)">Why?</button>
+            <div class="why-panel">
+              <div class="why-row"><span>Accepted</span><b>0</b></div>
+              <div class="why-row"><span>Declined</span><b>0</b></div>
+              <div class="why-row"><span>Missed window</span><b>4</b></div>
+              <div class="why-note">Mostly missed-window, not declines. Routing priority has been dropping since 12 Aug — this is why the card looks quiet.</div>
+            </div>
+          </div>
+
+          <div class="card busy">
+            <div class="card-top">
+              <div class="card-name">The Gale</div>
+              <span class="badge available">Available</span>
+            </div>
+            <div class="card-tags">structural-entry · hazmat-tolerant</div>
+
+            <div class="offer-line">Offers this week</div>
+            <div class="offer-count">21</div>
+            <div class="offer-usual">usual: ~13</div>
+
+            <button class="why-btn" onclick="toggleWhy(this)">Why?</button>
+            <div class="why-panel">
+              <div class="why-row"><span>Accepted</span><b>16</b></div>
+              <div class="why-row"><span>Declined</span><b>2</b></div>
+              <div class="why-row"><span>Missed window</span><b>3</b></div>
+              <div class="why-note calm">Steady acceptance. Ranking highest on proximity for this week's callouts.</div>
+            </div>
+          </div>
+
+        </div>
+        <div class="console-caption">Same line already on the card today — just answers the question Kip can't currently ask it.</div>
+      </div>
+    </div>
+
+    <!-- PHONE VIEW -->
+    <div class="view" id="view-phone">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="phone-status">Meteor Mite · cover identity only</div>
+          <div class="phone-app-name">Rook Dispatch</div>
+
+          <div class="stat-block">
+            <div class="stat-number">1</div>
+            <div class="stat-label">callout offer this week</div>
+            <div class="stat-usual">usually about 11</div>
+          </div>
+
+          <div class="breakdown">
+            <div class="breakdown-row"><span><span class="dot accepted"></span>Accepted</span><span>0</span></div>
+            <div class="breakdown-row"><span><span class="dot declined"></span>Declined</span><span>0</span></div>
+            <div class="breakdown-row"><span><span class="dot missed"></span>Missed window</span><span>4</span></div>
+          </div>
+
+          <div class="explain-box">
+            You haven't turned anything down. Your last 4 offers closed before you could answer — the response window is 60 seconds. Missed windows lower how often you're asked next, the same as a decline would. That's why offers have slowed.
+          </div>
+
+          <button class="ready-btn" id="readyBtn" onclick="markReady()">I'm ready</button>
+          <div class="ready-note" id="readyNote"></div>
+        </div>
+      </div>
+      <div class="phone-caption">"I'm ready" refreshes standing directly — no need to wait on an offer to prove it.</div>
+    </div>
+
+  </div>
+
+<script>
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    });
+  });
+
+  function toggleWhy(btn) {
+    const panel = btn.nextElementSibling;
+    panel.classList.toggle('open');
+    btn.textContent = panel.classList.contains('open') ? 'Hide' : 'Why?';
+  }
+
+  function markReady() {
+    const btn = document.getElementById('readyBtn');
+    const note = document.getElementById('readyNote');
+    btn.textContent = 'Standing refreshed';
+    btn.classList.add('done');
+    note.textContent = 'Routing priority nudged back up. Next available callout in range will reach you.';
+  }
+</script>
+
+</body>
+</html>
