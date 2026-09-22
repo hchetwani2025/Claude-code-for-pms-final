@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiet responders — one-pager (print)</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 1280px; height: 720px;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #16181c;
+  }
+  :root {
+    --navy: #1E2761;
+    --gray: #52514E;
+    --muted: #8A8A84;
+    --orange: #EB6834;
+    --blue: #2A78D6;
+    --warn-bg: #FDF0DC;
+    --warn-border: #EAC078;
+    --border: #E4E2DA;
+  }
+  .page { position: relative; width: 1280px; height: 720px; padding: 34px 48px 26px; }
+
+  .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--orange); margin-bottom: 8px; }
+  h1 { font-family: Cambria, Georgia, serif; font-size: 28px; line-height: 1.22; margin: 0 0 8px; color: var(--navy); max-width: 1000px; }
+  .sub { font-size: 13.5px; color: var(--gray); max-width: 760px; line-height: 1.45; margin: 0 0 20px; }
+
+  .row { display: flex; gap: 28px; margin-bottom: 18px; }
+  .chart-card { flex: 0 0 620px; border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px 10px; }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--gray); margin-bottom: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .swatch { width: 9px; height: 9px; border-radius: 2px; }
+
+  .right-col { flex: 1; display: flex; flex-direction: column; }
+  .stat { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+  .stat b.label { letter-spacing: 0.03em; font-weight: 700; }
+  .stat .big { font-size: 21px; font-weight: 700; color: var(--navy); }
+  .stat .cap { color: var(--muted); font-size: 10.5px; }
+
+  .why { background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #5C3D0A; line-height: 1.5; margin-top: 8px; flex: 1; }
+  .why b { color: #4a3308; }
+
+  .section-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+
+  .cards { display: flex; gap: 16px; margin-bottom: 18px; }
+  .card { flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .card-title { font-size: 13.5px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .card-body { font-size: 11.5px; color: var(--gray); line-height: 1.45; }
+
+  .chips { display: flex; gap: 14px; margin-bottom: 16px; }
+  .chip { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; }
+  .chip-title { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+  .chip-body { font-size: 10.5px; color: var(--gray); line-height: 1.4; }
+
+  .ask { border-top: 1px solid var(--border); padding-top: 12px; font-size: 12px; color: var(--navy); }
+  .ask b { color: #B5502F; }
+
+  svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">⚠ BEFORE ANY CODE SHIPS</div>
+  <h1>Dispatch didn't stop asking Meteor Mite because Mite got worse.</h1>
+  <p class="sub">A missed 60-second window costs a responder exactly what an active decline does. Nobody decided that on purpose — and nobody outside Engineering can currently tell the difference.</p>
+
+  <div class="row">
+    <div class="chart-card">
+      <div class="chart-title">Callout offers per week — Kip's two responders</div>
+      <div class="chart-sub">4.2 shipped 12 Aug · reweighted proximity, cut the answer window 90s → 60s</div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--orange)"></span>The Gale</span>
+        <span><span class="swatch" style="background:var(--blue)"></span>Meteor Mite</span>
+      </div>
+      <svg viewBox="0 0 600 175" width="600" height="175">
+        <line x1="38" y1="15" x2="38" y2="140" stroke="#E4E2DA" stroke-width="1"/>
+        <line x1="38" y1="140" x2="580" y2="140" stroke="#E4E2DA" stroke-width="1"/>
+        <text x="28" y="19" text-anchor="end" font-size="10" fill="#8A8A84">21</text>
+        <text x="28" y="144" text-anchor="end" font-size="10" fill="#8A8A84">0</text>
+        <text x="38" y="158" font-size="9" fill="#8A8A84">29 Jun</text>
+        <text x="540" y="158" font-size="9" fill="#8A8A84">31 Aug</text>
+
+        <line x1="420" y1="15" x2="420" y2="140" stroke="#C98500" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="424" y="13" font-size="10" fill="#C98500" font-weight="600">4.2 ships</text>
+
+        <polyline points="38,66 97,71 157,66 216,61 276,66 335,66 395,55 455,43 514,26 574,20"
+                  fill="none" stroke="#EB6834" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="38,77 97,71 157,83 216,77 276,71 335,77 395,83 455,116 514,128 574,134"
+                  fill="none" stroke="#2A78D6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <circle cx="38" cy="66" r="3.5" fill="#EB6834" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="574" cy="20" r="3.5" fill="#EB6834" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="38" cy="77" r="3.5" fill="#2A78D6" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="574" cy="134" r="3.5" fill="#2A78D6" stroke="#fff" stroke-width="1.5"/>
+
+        <text x="8" y="70" font-size="10" fill="#8A8A84">13</text>
+        <text x="8" y="81" font-size="10" fill="#8A8A84">11</text>
+        <text x="580" y="17" font-size="11" font-weight="700" fill="#16181c">21</text>
+        <text x="580" y="138" font-size="11" font-weight="700" fill="#16181c">1</text>
+      </svg>
+    </div>
+
+    <div class="right-col">
+      <div class="stat"><b class="label" style="color:var(--blue)">METEOR MITE</b><span class="big">11 → 1</span><span class="cap">offers/wk</span></div>
+      <div class="stat"><b class="label" style="color:var(--orange)">THE GALE</b><span class="big">13 → 21</span><span class="cap">offers/wk</span></div>
+      <div class="why"><b>Why:</b> the ranking code scores a missed window exactly like a real "no." A shorter window means more misses — each one lowers Mite's ranking the same as a refusal would, so Mite is asked less, has fewer chances to recover, and ranks lower again.</div>
+    </div>
+  </div>
+
+  <div class="section-label">What we'd build — visible to the person it happens to</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">🖥️ Kip's console</div>
+      <div class="card-body">Each coverage card shows <i>why</i> offers dropped — missed windows vs. declines — so Kip stops guessing and stops saying "hang in there."</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📱 Mite's phone</div>
+      <div class="card-body">A plain account, not silence: offers vs. usual, what actually happened, and a way to refresh standing directly.</div>
+    </div>
+  </div>
+
+  <div class="section-label">Open before this is buildable</div>
+  <div class="chips">
+    <div class="chip"><div class="chip-title">Data</div><div class="chip-body">The decline/timeout split is discarded in code today — needs a real fix estimate.</div></div>
+    <div class="chip"><div class="chip-title">Mechanism</div><div class="chip-body">The recovery action and its abuse limits aren't designed yet.</div></div>
+    <div class="chip"><div class="chip-title">Sign-off</div><div class="chip-body">Ravi's metric, Supply's data contract, Sofia's redesign — unconfirmed.</div></div>
+  </div>
+
+  <div class="ask"><b>Ask:</b> greenlight Wen and Marcus to scope the code-level fix and its cost against this mockup, in parallel with Sofia folding it into the console redesign.</div>
+
+</div>
+</body>
+</html>
