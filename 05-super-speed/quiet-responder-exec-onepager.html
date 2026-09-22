@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiet responders — exec brief</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f3f2ee;
+    --text-primary:   #16181c;
+    --text-secondary: #52514e;
+    --text-muted:     #8a8a84;
+    --border:         #e4e2da;
+    --series-mite:    #2a78d6;
+    --series-gale:    #eb6834;
+    --status-warn:    #c98500;
+    --status-crit:    #e34948;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface-2);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--text-primary);
+    padding: 28px 14px 40px;
+  }
+  .sheet {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 34px 38px 30px;
+  }
+
+  /* header */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--status-warn);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 25px;
+    line-height: 1.25;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .subhead {
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+    max-width: 54ch;
+  }
+
+  /* chart */
+  .chart-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px 14px;
+    margin-bottom: 22px;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .chart-sub { font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px; }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* icon row */
+  .concept-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .concept-card {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .concept-icon { font-size: 20px; margin-bottom: 8px; }
+  .concept-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .concept-body { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+
+  /* root cause strip */
+  .cause {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fff6e9;
+    border: 1px solid #f0d9ad;
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 12.5px;
+    color: #6b4c10;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+  .cause b { color: #4a3308; }
+
+  /* gaps row */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .gaps-row { display: flex; gap: 10px; margin-bottom: 22px; }
+  .gap-chip {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  .gap-chip b { display: block; font-size: 12.5px; color: var(--text-primary); margin-bottom: 2px; }
+
+  /* ask */
+  .ask {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+  .ask b { color: var(--status-crit); }
+</style>
+</head>
+<body>
+  <div class="sheet">
+
+    <div class="eyebrow">⚠ Before any code ships</div>
+    <h1>Dispatch didn't stop asking Meteor Mite because Mite got worse.</h1>
+    <p class="subhead">A missed 60-second window costs a responder exactly what an active decline does. Nobody decided that on purpose — and nobody outside Engineering can currently tell the difference.</p>
+
+    <div class="chart-card">
+      <div class="chart-title">Callout offers per week — Kip's two responders</div>
+      <div class="chart-sub">4.2 shipped 12 Aug · reweighted proximity, cut the answer window 90s → 60s</div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:var(--series-gale)"></span>The Gale</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--series-mite)"></span>Meteor Mite</span>
+      </div>
+      <svg viewBox="0 0 640 190" width="100%" height="190" role="img" aria-label="Line chart, ten weeks 29 June to 31 August: The Gale's weekly callout offers rise from 13 to 21 while Meteor Mite's fall from 11 to 1, diverging sharply after 4.2 ships on 12 August.">
+        <!-- gridlines -->
+        <line x1="40" y1="20" x2="40" y2="150" stroke="#e4e2da" stroke-width="1"/>
+        <line x1="40" y1="150" x2="600" y2="150" stroke="#e4e2da" stroke-width="1"/>
+        <text x="30" y="24" text-anchor="end" font-size="10" fill="#8a8a84">21</text>
+        <text x="30" y="154" text-anchor="end" font-size="10" fill="#8a8a84">0</text>
+        <text x="40" y="168" font-size="9" fill="#8a8a84">29 Jun</text>
+        <text x="560" y="168" font-size="9" fill="#8a8a84">31 Aug</text>
+
+        <!-- release marker: 4.2 ships 12 Aug, inside the 10 Aug week -->
+        <line x1="440" y1="20" x2="440" y2="150" stroke="#c98500" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="444" y="18" font-size="10" fill="#c98500" font-weight="600">4.2 ships</text>
+
+        <!-- The Gale: 13,12,13,14,13,13,15,17,20,21 -->
+        <polyline points="40,69.5 102,75.7 164,69.5 227,63.3 289,69.5 351,69.5 413,57.1 476,44.8 538,26.2 600,20"
+                  fill="none" stroke="#eb6834" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Meteor Mite: 11,12,10,11,12,11,10,4,2,1 -->
+        <polyline points="40,81.9 102,75.7 164,88.1 227,81.9 289,75.7 351,81.9 413,88.1 476,125.2 538,137.6 600,143.8"
+                  fill="none" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <circle cx="40" cy="69.5" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+        <circle cx="600" cy="20" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+        <circle cx="40" cy="81.9" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+        <circle cx="600" cy="143.8" r="4" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+
+        <text x="8" y="73" font-size="10" fill="#8a8a84">13</text>
+        <text x="8" y="86" font-size="10" fill="#8a8a84">11</text>
+        <text x="606" y="17" font-size="11" font-weight="700" fill="#16181c">21</text>
+        <text x="606" y="147" font-size="11" font-weight="700" fill="#16181c">1</text>
+      </svg>
+    </div>
+
+    <div class="cause">
+      <span>⚙️</span>
+      <span><b>Why:</b> the code that ranks who gets asked treats a missed window and a real "no" as the same event. A shorter window means more misses. Each one lowers Mite's ranking the same as a refusal would — asked less, so fewer chances to recover, so ranked lower again.</span>
+    </div>
+
+    <div class="section-label">What we'd build — visible to the person it happens to</div>
+    <div class="concept-row">
+      <div class="concept-card">
+        <div class="concept-icon">🖥️</div>
+        <div class="concept-title">Kip's console</div>
+        <div class="concept-body">Each coverage card shows <i>why</i> offers dropped — missed windows vs. declines — so Kip stops guessing and stops saying "hang in there."</div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">📱</div>
+        <div class="concept-title">Mite's phone</div>
+        <div class="concept-body">A plain account, not silence: offers vs. usual, what actually happened, and a way to refresh standing directly.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Open before this is buildable</div>
+    <div class="gaps-row">
+      <div class="gap-chip"><b>Data</b>The decline/timeout split is discarded in code today — needs a real fix estimate, not just a looser number.</div>
+      <div class="gap-chip"><b>Mechanism</b>The recovery action and its abuse limits aren't designed yet.</div>
+      <div class="gap-chip"><b>Sign-off</b>Ravi's metric, Supply's data contract, Sofia's redesign — none confirmed clear.</div>
+    </div>
+
+    <div class="ask"><b>Ask:</b> greenlight Wen and Marcus to scope the code-level fix and its cost against the mockup, in parallel with Sofia folding this into the console redesign. Full brief and click-through attached.</div>
+
+  </div>
+</body>
+</html>
