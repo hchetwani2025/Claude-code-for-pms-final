@@ -63,6 +63,16 @@ Other open items from the handover:
 - There is no written description of how routing ranks responders — only Wen's head. Writing that down is on you.
 - The Q3 roadmap (owner: Helen) lists 4.2 items as done/committed; Supply's requisition approval chains target 4.3; handler phone app and shared cover between responders are Q4-exploring, not committed.
 
+### What we established in Module 5 (22 Sep)
+
+- **The mechanism is in the code, not a mystery.** `offer.py` knows `DECLINED` from `NO_ANSWER` and throws the difference away on the next line into `history.record_declined()`; `history.py` keeps one running score per responder, no event log. Wen's 2019 TODO next to it asks whether the score should ease back on its own. Never resolved.
+- **Marcus asked exactly this on 14 Aug** in `#dispatch-team` ("the config doesn't distinguish between them"). Wen was on PTO; nobody answered. Nadia's ticket split (two-thirds "phone never goes off", one-third "gone before I could answer") is that question and the timeout, respectively.
+- **The export shows who it happened to.** Four responders collapsed after 4.2 while everyone else rose: Farlight 12→0, Vesper 14→1, The Undertow 12→1, Meteor Mite 11→1 offers/week. Offers dropped before acceptance did — Dispatch stopped asking. Kip handles Mite (quiet) and The Gale (13→21), same city, same week.
+- **Tickets and the export don't always agree** (Nightwell, The Drift, Stormwrack tickets say "quiet"; the export shows them rising). When they conflict, say so — don't pick one silently.
+- **Helen's ask is "not a setting":** something Kip would notice on the console, something Mite would feel on the phone. The brief (`05-super-speed/brief.md`) commits to that and names six open questions before it's buildable; #1 is that the decline/timeout split isn't recorded anywhere yet. The click-through is `05-super-speed/prototype.html`; the prompt library is `05-super-speed/prompts.md`.
+- **Words that land:** handlers say "callouts" and "usual pace"; responders say "gone before I could answer" and ask "is my account broken". Use "turned down", not "declined", when writing for them.
+- **Sandbox note:** LibreOffice headless conversion (pptx→pdf) fails here for any file. Render HTML through headless Chromium (Playwright, `pip install playwright`) for PDFs and screenshots instead.
+
 ### Reference material in this repo
 
-`00-rook/company/` holds the source documents above plus release history and the Q3 roadmap. `00-rook/feedback/` holds four interviews and 25 tickets (Module 2). `00-rook/data/callout-history.csv` is the weekly pings-sent/pings-taken export by responder and handler (Module 3). `00-rook/code/dispatch-routing/` is the actual routing code — owner Wen Li, ask Marcus if she's out (Module 4).
+`00-rook/company/` holds the source documents above plus release history and the Q3 roadmap. `00-rook/feedback/` holds four interviews and 25 tickets (Module 2). `00-rook/data/callout-history.csv` is the weekly pings-sent/pings-taken export by responder and handler (Module 3). `00-rook/code/dispatch-routing/` is the actual routing code — owner Wen Li, ask Marcus if she's out (Module 4). `05-super-speed/` holds the Module 5 deliverables listed above.
