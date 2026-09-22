@@ -78,11 +78,48 @@ there."
   3x is 4.2 and how much is the seasonal softness Priya flagged before
   anyone treats this as solved.
 
+## Before this builds
+
+Six open questions, or this quietly becomes a number-flip with a label on it.
+
+1. **The data isn't there yet.** `offer.py` already knows the difference
+   between a decline and a timeout — the answer is `DECLINED` or
+   `NO_ANSWER` — and throws that away on the next line, into
+   `history.record_declined()`. `history.py` stores one running score per
+   responder, not events. Every number on both mockup screens — offers this
+   week, the accepted/declined/missed-window split, "usual: ~11" — needs an
+   event log and a weekly rollup that don't exist today. Need Wen and
+   Marcus's estimate for that, separately from the penalty fix, before this
+   rides on the same timeline as "ship this afternoon."
+2. **"I'm ready" has no defined mechanism.** How much it moves the score,
+   whether Mite can tap it repeatedly without ever answering a real offer,
+   and how it relates to the availability flag Mite already sets in the app
+   — all open.
+3. **Kip gets an explanation, not a lever.** As designed, Kip reads a reason
+   instead of guessing, and still just watches. Decide whether Kip is meant
+   to act on it — message Mite directly, flag the pattern to Marcus — or
+   whether visibility is the whole feature.
+4. **Only the sympathetic case is designed.** Mite is all missed windows,
+   Gale is all clean accepts. Needs a version of the card that still reads
+   fairly for a responder with real declines and no misses.
+5. **Three dependencies unconfirmed.** Ravi — does this change what counts
+   toward the acceptance rate he reports weekly, or only what routing sees
+   internally? Supply — `availability.py` says any shape change to the
+   availability record gets flagged to them first; this doesn't touch that
+   record, but the brief should say so, not leave it assumed. Sofia — this
+   belongs inside her in-flight console redesign, not next to it.
+6. **No success measure.** Pick the number that tells us in a few weeks
+   whether this changed anything for Mite — offers trending back toward 11,
+   or Nadia's ticket split moving off two-thirds "phone never goes off."
+
 ## What I need
 
-Fifteen minutes with Sofia to turn this into two real screens, and a check
-with Nadia that "missed window" reads the way responders actually talk about
-it — before Wen scopes the change underneath.
+Wen and Marcus's read on #1 first — it decides whether this ships alongside
+the penalty fix or on its own timeline. In parallel: fifteen minutes with
+Sofia to fold this into the console redesign rather than beside it, and a
+check with Nadia that "missed window" reads the way responders actually
+talk about it.
 
 *A rough clickable version of both screens is attached: the console view Kip
-would see, and the phone screen Mite would see.*
+would see, and the phone screen Mite would see. It's a concept, not a spec —
+the open questions above are what stand between it and one.*
