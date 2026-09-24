@@ -1,6 +1,6 @@
 ---
-name: review-checklist
-description: Review and score a product brief (one-pager, proposal, spec) out of 8 against four fixed checks before it goes any further — named owner, success measure, scope consistency, and problem-before-fix. Use when the user asks to review, check, score, vet, or gate a brief, or runs /review-checklist with a file path or pasted text.
+name: review-checklist-skills
+description: Review and score a product brief (one-pager, proposal, spec) out of 8 against four fixed checks before it goes any further — named owner, success measure, scope consistency, and problem-before-fix. Use when the user asks to review, check, score, vet, or gate a brief, or runs /review-checklist-skills with a file path or pasted text.
 argument-hint: <path to brief, several paths, or a folder>
 ---
 
