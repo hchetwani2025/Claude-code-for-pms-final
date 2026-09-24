@@ -97,10 +97,13 @@
   const app = document.getElementById('app');
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-  // Scoring rules from SKILL.md: a "b" criterion counts only when its "a" criterion is met.
+  // Scoring rules from SKILL.md: 1b, 2b and 3b count only when their "a" criterion is met.
+  // 4b has no such rule, so it scores on its own.
+  const INDEPENDENT_B = ['4b'];
   function scoreCheck(check) {
     const a = !!check.criteria[0].met;
-    const b = a && !!check.criteria[1].met;
+    const bMet = !!check.criteria[1].met;
+    const b = INDEPENDENT_B.includes(check.criteria[1].id) ? bMet : a && bMet;
     return { a, b, score: (a ? 1 : 0) + (b ? 1 : 0) };
   }
   const result = s => s === 2 ? ['Pass', 'pass'] : s === 1 ? ['Partial', 'partial'] : ['Fail', 'fail'];
