@@ -82,6 +82,17 @@ is missing.
 
 Only 8/8 is Ready. A score of 7 is still a gate stop.
 
+## Result emoji
+
+Put one emoji line directly under the score line of each brief:
+
+- **8/8:** `🎉🎊✨ 🎊🎉✨ 🎉🎊✨` (confetti)
+- **Below 8:** `😞`
+
+Use these exact strings, so every run looks the same. In the summary table
+for several briefs, put the same emoji at the start of the Verdict cell
+(`🎉` for 8/8, `😞` for lower).
+
 ## Output format
 
 Use exactly this layout for each brief. Keep it short.
@@ -90,6 +101,7 @@ Use exactly this layout for each brief. Keep it short.
 ## <Brief title> — <file name>
 
 **Score: <n>/8 — <verdict>**
+<confetti line if 8/8, else 😞>
 
 | Check | Criteria met | Score | Evidence |
 |---|---|---|---|
