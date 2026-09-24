@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Release 4.2 Report</title>
+<meta name="description" content="What went wrong with Rook Dispatch release 4.2, how six course modules found it, the fix, and the habit that stops it happening again.">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee8; --line: #dcdad2;
+    --text: #0b0b0b; --text-2: #52514e; --muted: #7a7973;
+    --four: #eb6834; --rest: #2a78d6; --accent: #2a78d6;
+    --good: #1a7f4b; --good-bg: #e3f3ea; --warn: #9a6400; --warn-bg: #fbf0d9; --bad: #b3261e; --bad-bg: #fbe6e4;
+    --code-bg: #1b1b1a; --code-text: #eaeae4; --code-dim: #8f8e86; --code-hit: #ffb38a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --bg: #111110; --surface: #1a1a19; --surface-2: #232321; --line: #33332f;
+      --text: #ffffff; --text-2: #c3c2b7; --muted: #8f8e86;
+      --four: #d95926; --rest: #3987e5; --accent: #3987e5;
+      --good: #5cc48b; --good-bg: #16301f; --warn: #e3a93b; --warn-bg: #33270e; --bad: #f07c72; --bad-bg: #3a1a17;
+      --code-bg: #0c0c0b; --code-text: #eaeae4; --code-dim: #8f8e86; --code-hit: #ffb38a;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #111110; --surface: #1a1a19; --surface-2: #232321; --line: #33332f;
+    --text: #ffffff; --text-2: #c3c2b7; --muted: #8f8e86;
+    --four: #d95926; --rest: #3987e5; --accent: #3987e5;
+    --good: #5cc48b; --good-bg: #16301f; --warn: #e3a93b; --warn-bg: #33270e; --bad: #f07c72; --bad-bg: #3a1a17;
+    --code-bg: #0c0c0b; --code-text: #eaeae4; --code-dim: #8f8e86; --code-hit: #ffb38a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  #deck { height: 100%; overflow-y: auto; scroll-snap-type: y proximity; scroll-behavior: smooth; }
+  .slide {
+    min-height: 100vh; scroll-snap-align: start;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 72px 16px 56px;
+  }
+  .inner { width: 100%; max-width: 1080px; margin: 0 auto; }
+  .kicker { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 10px; }
+  h1 { font-size: clamp(34px, 6vw, 64px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -.02em; }
+  h2 { font-size: clamp(26px, 4vw, 40px); line-height: 1.12; margin: 0 0 14px; letter-spacing: -.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  .lede { font-size: clamp(18px, 2.2vw, 22px); color: var(--text-2); max-width: 760px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  .four { color: var(--four); font-weight: 700; }
+  .rest { color: var(--rest); font-weight: 700; }
+
+  /* top bar */
+  .bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: 48px;
+    display: flex; align-items: center; gap: 12px; padding: 0 16px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line); font-size: 14px;
+  }
+  .bar b { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar #count { white-space: nowrap; }
+  .bar .sp { flex: 1; }
+  .bar button {
+    font: inherit; font-size: 13px; color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer;
+  }
+  .progress { position: fixed; top: 47px; left: 0; height: 2px; background: var(--accent); z-index: 21; width: 0; transition: width .25s; }
+  .dots { position: fixed; right: 14px; top: 50%; transform: translateY(-50%); z-index: 20; display: flex; flex-direction: column; gap: 9px; }
+  .dots button { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); background: transparent; padding: 0; cursor: pointer; }
+  .dots button.on { background: var(--accent); border-color: var(--accent); }
+  @media (max-width: 700px) { .dots { display: none; } body { font-size: 16px; } }
+
+  /* cards and grids */
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 860px) { .g3, .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .g2, .g3, .g4 { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+  .stat .n { white-space: nowrap; font-size: clamp(30px, 4.2vw, 46px); font-weight: 750; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat .n small { font-size: .45em; color: var(--muted); font-weight: 600; }
+  .stat .l { color: var(--text-2); font-size: 14px; margin-top: 8px; }
+
+  /* statements */
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 22px 0 26px; display: grid; gap: 12px; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; font-size: clamp(17px, 2vw, 20px); }
+  .steps li::before {
+    content: counter(s); width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 15px; margin-top: 1px;
+  }
+
+  /* prompt block */
+  .prompt { background: var(--code-bg); color: var(--code-text); border-radius: 12px; padding: 14px 16px; font: 14.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+  .prompt .who { display: block; color: var(--code-dim); font-size: 12px; margin-bottom: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .prompt.none { background: var(--surface-2); color: var(--text-2); border: 1px dashed var(--line); font-family: inherit; font-size: 14px; }
+  .src { font-size: 12.5px; color: var(--muted); margin-top: 8px; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+
+  /* module layout */
+  .mod { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; align-items: start; margin-top: 18px; }
+  @media (max-width: 860px) { .mod { grid-template-columns: 1fr; } }
+  .mod > *, .grid > * { min-width: 0; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; color: var(--text-2); }
+  .badge .num { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 13px; }
+
+  /* timeline of modules */
+  .tl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+  @media (max-width: 860px) { .tl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tl a { text-decoration: none; color: inherit; }
+  .tl .card { height: 100%; transition: transform .15s, border-color .15s; }
+  .tl .card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .tl .m { font-size: 12px; color: var(--muted); font-weight: 650; letter-spacing: .05em; }
+  .tl .t { font-weight: 700; margin: 4px 0 6px; }
+  .tl .d { font-size: 13.5px; color: var(--text-2); }
+
+  /* quotes */
+  blockquote { margin: 0; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 10px 10px 0; color: var(--text-2); }
+  blockquote cite { display: block; font-style: normal; font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* code */
+  pre.code { margin: 0; background: var(--code-bg); color: var(--code-text); border-radius: 12px; padding: 14px 16px; overflow-x: auto; font: 13.5px/1.55 ui-monospace, Menlo, Consolas, monospace; }
+  pre.code .c { color: var(--code-dim); }
+  pre.code .hit { color: var(--code-hit); font-weight: 700; }
+
+  /* charts */
+  .spark-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 600px) { .spark-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .spark { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 6px; position: relative; }
+  .spark.is-four { border-color: var(--four); }
+  .spark .nm { font-size: 12.5px; font-weight: 600; line-height: 1.25; min-height: 2.5em; }
+  .spark .vals { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .spark svg { display: block; width: 100%; height: 38px; }
+  .chart-wrap { position: relative; }
+  .chart-wrap svg { display: block; width: 100%; height: auto; }
+  .tip {
+    position: absolute; pointer-events: none; background: var(--surface); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 13px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18); white-space: nowrap; opacity: 0; transition: opacity .1s; z-index: 5;
+  }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); margin: 6px 0 10px; }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  details.table { margin-top: 8px; font-size: 13px; color: var(--text-2); }
+  details.table table { border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  details.table td, details.table th { border-top: 1px solid var(--line); padding: 3px 8px; text-align: right; }
+  details.table th:first-child, details.table td:first-child { text-align: left; }
+
+  /* loop diagram */
+  .loop svg { width: 100%; height: auto; display: block; }
+  .loop text { font-family: system-ui, sans-serif; }
+
+  /* prototype frame */
+  .frame { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #0d0d0c; box-shadow: 0 16px 40px rgba(0,0,0,.25); }
+  .frame .chrome { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+  .frame .chrome i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: inline-block; }
+  .frame iframe { display: block; width: 100%; height: min(68vh, 640px); border: 0; background: #0d0d0c; }
+
+  /* checks */
+  .check { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; }
+  .check .ico { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--bad-bg); color: var(--bad); font-weight: 800; font-size: 18px; }
+  .check .miss { font-size: 12px; font-weight: 700; color: var(--bad); letter-spacing: .04em; text-transform: uppercase; }
+  .check p { font-size: 15px; color: var(--text-2); margin: 4px 0 0; }
+
+  /* score meter */
+  .meter { display: flex; gap: 4px; margin: 8px 0 4px; }
+  .meter span { flex: 1; height: 12px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); }
+  .meter span.on { background: var(--accent); border-color: var(--accent); }
+  .score-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 10px; align-items: center; margin: 10px 0; }
+  .score-row .nm { font-size: 14px; font-weight: 600; }
+  .score-row .sc { font-weight: 750; font-variant-numeric: tabular-nums; text-align: right; }
+
+  .pill { display: inline-block; font-size: 12px; font-weight: 650; padding: 2px 9px; border-radius: 999px; }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.good { background: var(--good-bg); color: var(--good); }
+
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    #deck { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .tl .card { transition: none; }
+  }
+  @media print {
+    #deck { height: auto; overflow: visible; }
+    .bar, .dots, .progress { display: none; }
+    .slide { min-height: auto; page-break-after: always; }
+    .reveal { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>Rook Dispatch · Release 4.2</b><span class="muted" id="count">1 / 13</span>
+  <span class="sp"></span>
+  <button id="theme" type="button" aria-label="Switch light or dark theme">Theme</button>
+</div>
+<div class="progress" id="progress"></div>
+<nav class="dots" id="dots" aria-label="Slides"></nav>
+
+<main id="deck">
+
+<!-- 1 · Title -->
+<section class="slide" id="s-title">
+  <div class="inner reveal">
+    <p class="kicker">Final report · Claude Code for PMs · 24 September 2026</p>
+    <h1>Release 4.2 did not break Dispatch.<br>It stopped asking <span class="four">four people</span>.</h1>
+    <p class="lede">What happened, how six sessions found it, the fix I would build, and the habit that stops the next release from doing it again.</p>
+    <div class="grid g4" style="margin-top:28px">
+      <div class="card stat"><div class="n">90<small>s</small> → 60<small>s</small></div><div class="l">Time a responder has to answer an offer</div></div>
+      <div class="card stat"><div class="n" style="color:var(--four)">4</div><div class="l">Responders who fell to 0–1 offers a week</div></div>
+      <div class="card stat"><div class="n">72.7<small>%</small></div><div class="l">Acceptance, week of 31 Aug: it looks almost normal again</div></div>
+      <div class="card stat"><div class="n">0</div><div class="l">People who answered Marcus's question on 14 Aug</div></div>
+    </div>
+    <p class="muted small" style="margin-top:22px">Use ↓ / → or the dots to move. Rook Industries is a fictional teaching scenario.</p>
+  </div>
+</section>
+
+<!-- 2 · What happened, plainly -->
+<section class="slide" id="s-plain">
+  <div class="inner reveal">
+    <p class="kicker">What happened, plainly</p>
+    <h2>Three facts explain the "phone never rings" tickets.</h2>
+    <ol class="steps">
+      <li><span>4.2 cut the time to answer an offer from <b>90 to 60 seconds</b>. More offers ran out before people reached their phones.</span></li>
+      <li><span>The code counts a missed offer <b>the same as a "no"</b>. Each one takes 0.12 off a responder's score. A "yes" gives back only 0.08. Nothing restores the score over time.</span></li>
+      <li><span>4.2 also cut the weight of that score from 0.40 to 0.25. But for anyone who hit the floor, the score was still enough to rank them last. So <b>four responders stopped getting offers</b> and could not earn their way back.</span></li>
+    </ol>
+    <div class="grid g2">
+      <div class="card"><h3>What it was not</h3><p class="small muted" style="margin:0">Not only the August dip, and not the proximity change on its own. The average fell and then recovered. The four responders did not recover.</p></div>
+      <div class="card"><h3>What it means</h3><p class="small muted" style="margin:0">Reverting 4.2 moves the pain to another group (Priya's warning). The fix is to stop treating a missed window as a refusal, and to let the score recover.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · The loop -->
+<section class="slide" id="s-loop">
+  <div class="inner reveal">
+    <p class="kicker">The mechanism</p>
+    <h2>A loop with no way out</h2>
+    <p class="lede" style="margin-bottom:18px">Each turn of the loop makes the next turn more likely. Nothing in the code breaks it.</p>
+    <div class="card loop">
+      <svg viewBox="0 0 900 330" role="img" aria-label="Loop: 60-second window, offer missed, recorded as a decline, score drops, ranked lower, fewer offers, fewer chances to recover, back to score stays low">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+        </defs>
+        <g font-size="15" fill="var(--text)">
+          <rect x="20"  y="30" width="180" height="70" rx="12" fill="var(--surface-2)" stroke="var(--line)"/>
+          <text x="110" y="60" text-anchor="middle" font-weight="700">60-second window</text>
+          <text x="110" y="82" text-anchor="middle" fill="var(--text-2)" font-size="13">was 90 before 4.2</text>
+
+          <rect x="250" y="30" width="180" height="70" rx="12" fill="var(--surface-2)" stroke="var(--line)"/>
+          <text x="340" y="60" text-anchor="middle" font-weight="700">Offer runs out</text>
+          <text x="340" y="82" text-anchor="middle" fill="var(--text-2)" font-size="13">NO_ANSWER</text>
+
+          <rect x="480" y="30" width="200" height="70" rx="12" fill="var(--bad-bg)" stroke="var(--bad)"/>
+          <text x="580" y="60" text-anchor="middle" font-weight="700">Recorded as a decline</text>
+          <text x="580" y="82" text-anchor="middle" fill="var(--text-2)" font-size="13">record_declined()</text>
+
+          <rect x="700" y="130" width="180" height="70" rx="12" fill="var(--surface-2)" stroke="var(--line)"/>
+          <text x="790" y="160" text-anchor="middle" font-weight="700">Score −0.12</text>
+          <text x="790" y="182" text-anchor="middle" fill="var(--text-2)" font-size="13">a "yes" is only +0.08</text>
+
+          <rect x="480" y="235" width="200" height="70" rx="12" fill="var(--surface-2)" stroke="var(--line)"/>
+          <text x="580" y="265" text-anchor="middle" font-weight="700">Ranked lower</text>
+          <text x="580" y="287" text-anchor="middle" fill="var(--text-2)" font-size="13">floor is 0.0</text>
+
+          <rect x="250" y="235" width="180" height="70" rx="12" fill="var(--surface-2)" stroke="var(--four)" stroke-width="2"/>
+          <text x="340" y="265" text-anchor="middle" font-weight="700" fill="var(--four)">Fewer offers</text>
+          <text x="340" y="287" text-anchor="middle" fill="var(--text-2)" font-size="13">11 → 1 a week (Mite)</text>
+
+          <rect x="20" y="235" width="180" height="70" rx="12" fill="var(--surface-2)" stroke="var(--line)"/>
+          <text x="110" y="265" text-anchor="middle" font-weight="700">No way back</text>
+          <text x="110" y="287" text-anchor="middle" fill="var(--text-2)" font-size="13">no time-based reset</text>
+        </g>
+        <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#ah)">
+          <path d="M200 65 H246"/>
+          <path d="M430 65 H476"/>
+          <path d="M680 65 C 760 65, 790 90, 790 126"/>
+          <path d="M790 200 C 790 250, 740 270, 684 270"/>
+          <path d="M480 270 H434"/>
+          <path d="M250 270 H204"/>
+          <path d="M110 235 C 110 180, 300 160, 470 110" stroke-dasharray="6 5"/>
+        </g>
+        <text x="330" y="196" font-size="13" fill="var(--muted)">the next offer — if one comes</text>
+      </svg>
+    </div>
+    <p class="muted small" style="margin-top:12px">Source: <code>00-rook/code/dispatch-routing/</code>, files <code>offer.py</code>, <code>history.py</code> and <code>config.py</code>.</p>
+  </div>
+</section>
+
+<!-- 4 · Six modules overview -->
+<section class="slide" id="s-path">
+  <div class="inner reveal">
+    <p class="kicker">How I found it</p>
+    <h2>Six sessions, one thread</h2>
+    <p class="lede">Each session gave me one real finding or artifact. The next six slides show each one next to the prompt that produced it.</p>
+    <div class="tl">
+      <a href="#s-m1"><div class="card"><div class="m">MODULE 1</div><div class="t">Origin Story</div><div class="d">A context file: who, what, and where 4.2 stands</div></div></a>
+      <a href="#s-m2"><div class="card"><div class="m">MODULE 2</div><div class="t">Super Hearing</div><div class="d">The tickets and the interviews did not agree</div></div></a>
+      <a href="#s-m3"><div class="card"><div class="m">MODULE 3</div><div class="t">Rewind</div><div class="d">The average hid four people</div></div></a>
+      <a href="#s-m4"><div class="card"><div class="m">MODULE 4</div><div class="t">X-Ray Vision</div><div class="d">The code counts a missed offer as a "no"</div></div></a>
+      <a href="#s-m5"><div class="card"><div class="m">MODULE 5</div><div class="t">Super Speed</div><div class="d">A brief and a clickable prototype</div></div></a>
+      <a href="#s-m6"><div class="card"><div class="m">MODULE 6</div><div class="t">Sidekicks</div><div class="d">A skill that scores every brief</div></div></a>
+    </div>
+    <p class="muted small" style="margin-top:16px">A note on the prompts: the prompt slots in <code>prompts.md</code> for Modules 1–4 are empty on every branch. For those modules I show the finding and say that no prompt was saved. I did not make up a prompt.</p>
+  </div>
+</section>
+
+<!-- 5 · M1 -->
+<section class="slide" id="s-m1">
+  <div class="inner reveal">
+    <span class="badge"><span class="num">1</span> Origin Story</span>
+    <h2 style="margin-top:10px">Artifact: a context file that holds the whole situation</h2>
+    <div class="mod">
+      <div>
+        <p>The Working context in <code>CLAUDE.md</code> was built from Rook's own documents. From it, each later session started out knowing the people, the terms and the open problem:</p>
+        <blockquote>"Since then, acceptance is down and complaint volume is roughly 3x normal, split about two-thirds 'phone never rings' to one-third 'gone before I could answer.' The timeout cut plausibly explains the second theme; <b>the first is unexplained.</b>"<cite>CLAUDE.md · Working context · Where things stand</cite></blockquote>
+        <div class="grid g3" style="margin-top:14px">
+          <div class="card stat"><div class="n">6</div><div class="l">People mapped to what they own</div></div>
+          <div class="card stat"><div class="n">3×</div><div class="l">Normal ticket volume since 4.2</div></div>
+          <div class="card stat"><div class="n">?</div><div class="l">"Phone never rings", which was unexplained</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt none"><b>No prompt saved.</b> Slots 1–3 in <code>01-origin-story/prompts.md</code> are empty on every branch.</div>
+        <p class="src">Artifact: CLAUDE.md → "Working context" (main, commit ae26c88)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · M2 -->
+<section class="slide" id="s-m2">
+  <div class="inner reveal">
+    <span class="badge"><span class="num">2</span> Super Hearing</span>
+    <h2 style="margin-top:10px">Finding: the two piles of feedback did not agree</h2>
+    <div class="mod">
+      <div>
+        <div class="grid g2">
+          <div class="card"><h3>4 interviews</h3><p class="small muted" style="margin:0">These were console research about dark mode, filters and alert sounds. The quiet phones came up only in passing.</p></div>
+          <div class="card"><h3>25 tickets</h3><p class="small muted" style="margin:0">Most describe a phone gone quiet, some describe an offer "gone before I could answer", and some describe both.</p></div>
+        </div>
+        <blockquote style="margin-top:14px">"I hadn't really put those two things next to each other before, the quiet weeks and the fast-vanishing ones."<cite>Aunt Dot, handler for Vesper · interview, 3 Sep</cite></blockquote>
+        <blockquote style="margin-top:10px">"is my account broken. nothing in like 10 days"<cite>Nightwell · ticket T-009, 22 Aug. The export shows her offers going <b>up</b>, 15 → 21 a week.</cite></blockquote>
+        <p class="small muted" style="margin-top:10px">Tickets and data disagree both ways. Only Aunt Dot linked the two themes. So this pointed to the numbers as the next step.</p>
+      </div>
+      <div>
+        <div class="prompt none"><b>No prompt saved.</b> Slots 1–3 in <code>02-super-hearing/prompts.md</code> are empty on every branch.</div>
+        <p class="src">Sources: 00-rook/feedback/interviews/aunt-dot.txt · tickets/t-009.txt · data/callout-history.csv</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · M3 -->
+<section class="slide" id="s-m3">
+  <div class="inner reveal">
+    <span class="badge"><span class="num">3</span> Rewind</span>
+    <h2 style="margin-top:10px">Finding: the average hid four people</h2>
+    <div class="mod">
+      <div class="card">
+        <h3>Acceptance rate, all responders, weekly</h3>
+        <div class="chart-wrap" id="acc-wrap"><svg id="acc" viewBox="0 0 560 230" role="img" aria-label="Weekly acceptance rate, 29 June to 31 August 2026: about 77% until 4.2, 54% the week of 10 August, back to 73% by 31 August"></svg><div class="tip" id="acc-tip"></div></div>
+        <p class="small muted" style="margin:6px 0 0">It drops to 54% in the week of 10 Aug and is back to 73% by 31 Aug. The headline number says the problem is fading.</p>
+        <details class="table"><summary>Show as table</summary><table id="acc-table"></table></details>
+      </div>
+      <div>
+        <h3 style="margin-bottom:4px">Offers per week, each responder</h3>
+        <div class="legend"><span><i style="background:var(--four)"></i>The four who went quiet</span><span><i style="background:var(--rest)"></i>The other twelve</span></div>
+        <div class="spark-grid" id="sparks"></div>
+        <div class="prompt none" style="margin-top:14px"><b>No prompt saved.</b> Slots 1–3 in <code>03-rewind/prompts.md</code> are empty on every branch.</div>
+        <p class="src">Source: 00-rook/data/callout-history.csv (16 responders × 10 weeks)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · M4 -->
+<section class="slide" id="s-m4">
+  <div class="inner reveal">
+    <span class="badge"><span class="num">4</span> X-Ray Vision</span>
+    <h2 style="margin-top:10px">Finding: the code counts a missed offer as a "no"</h2>
+    <div class="mod">
+      <div>
+<pre class="code"><span class="c"># offer.py: the loop that offers a callout down the list</span>
+answer = offer_to(responder, callout)   <span class="c"># ACCEPTED, DECLINED or NO_ANSWER</span>
+if answer == ACCEPTED:
+    history.record_accepted(responder)
+    return responder
+<span class="hit">history.record_declined(responder)</span>     <span class="c"># NO_ANSWER lands here too</span>
+
+<span class="c"># config.py</span>
+OFFER_TIMEOUT_SECONDS = <span class="hit">60</span>   <span class="c"># was 90 until 4.2</span>
+ACCEPTANCE_CREDIT = 0.08
+DECLINE_PENALTY   = <span class="hit">0.12</span>
+
+<span class="c"># history.py</span>
+<span class="c"># TODO(wen, 2019): should this ease back toward NEUTRAL_SCORE</span>
+<span class="c"># on its own after a while? ... Leaving it as-is for now.</span></pre>
+        <blockquote style="margin-top:12px">"was that meant to apply to responders who've been turning jobs down too, or only everyone else? the config doesn't distinguish between them"<cite>Marcus Oyelaran · #dispatch-team, 14 Aug. Wen was on PTO, and nobody else answered.</cite></blockquote>
+      </div>
+      <div>
+        <div class="prompt none"><b>No prompt saved.</b> Slots 1–3 in <code>04-x-ray-vision/prompts.md</code> are empty on every branch.</div>
+        <p class="src">Sources: 00-rook/code/dispatch-routing/offer.py · config.py · history.py · company/notes/dispatch-slack-thread.txt</p>
+        <div class="card" style="margin-top:14px"><h3>Why this settles it</h3><p class="small muted" style="margin:0">The code knows the difference between a "no" and a missed offer, and then drops it on the next line. The 60-second window creates more missed offers. The score has a floor at 0 and no reset.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · M5 -->
+<section class="slide" id="s-m5">
+  <div class="inner reveal">
+    <span class="badge"><span class="num">5</span> Super Speed</span>
+    <h2 style="margin-top:10px">Artifact: a brief for Helen, then a prototype of the fix</h2>
+    <div class="mod">
+      <div>
+        <p>Helen asked for "not a setting", but something Kip would notice and Mite would feel. The brief <b>Quiet responders: what we'd build instead of a number</b> answers her:</p>
+        <blockquote>"Mite's acceptance didn't collapse first — the offers did. Mite did not become unreliable. Dispatch stopped asking."<cite>05-super-speed/brief.md</cite></blockquote>
+        <ul class="small" style="color:var(--text-2);padding-left:18px;margin-top:12px">
+          <li>Mite's phone shows offers against their usual count, and splits them into accepted, declined and missed-window.</li>
+          <li>Kip's coverage card shows the same line, with a "Why?" button.</li>
+          <li>The brief lists six open questions before anyone builds it. Number 1: nothing records a decline apart from a timeout yet.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="prompt"><span class="who">My prompt → the prototype</span>Take the brief you just wrote and build me a working prototype, an actual screen I can click through, not a description of one. Save it as 05-super-speed/prototype.html, a single file I can just open in my browser. Show me where this would actually happen, and make at least one thing on it respond when I click it.</div>
+        <p class="src">05-super-speed/prompts.md · prompt 4 (branch claude/admiring-davinci-v1wwxv)</p>
+        <div class="prompt" style="margin-top:12px"><span class="who">My prompt → the brief's open questions</span>Using Kip and Meteor Mite, walk me through what's still missing from the brief before this could actually get built. The note says this shouldn't just be a setting we quietly flip.</div>
+        <p class="src">05-super-speed/prompts.md · prompt 1</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · The fix: prototype -->
+<section class="slide" id="s-fix">
+  <div class="inner reveal">
+    <p class="kicker">The fix, through my prototype</p>
+    <h2>Click it: Kip's console and Mite's phone</h2>
+    <p class="lede" style="margin-bottom:14px">Try "Why?" on Mite's card, switch to Mite's phone, and flip between the quiet week and the normal week. The numbers come from the callout export.</p>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i><span style="margin-left:8px">05-super-speed/prototype.html · live, embedded</span></div>
+      <iframe title="Quiet responders prototype" sandbox="allow-scripts" srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot; data-theme=&quot;dark&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;title&gt;Quiet responders — click-through&lt;/title&gt;
+&lt;style&gt;
+  /* One spacing scale, three type sizes, shared by console and phone. */
+  :root {
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+    --t-sm: 12px; --t-md: 14px; --t-lg: 28px;
+    --radius: 10px;
+    --font: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Helvetica, Arial, sans-serif;
+    --blue: #3b8ee0; --amber: #e0a72e; --green: #4fbf7b; --orange: #eb6834;
+  }
+  :root[data-theme=&quot;dark&quot;] {
+    --bg: #05070a; --panel: #12161c; --card: #1b212b; --card-2: #222a36;
+    --border: #2c3543; --text: #e7ebf1; --muted: #8b96a5;
+    --note-bg: rgba(224,167,46,0.12); --note-border: rgba(224,167,46,0.4); --note-text: #f0cf8f;
+    --calm-bg: rgba(59,142,224,0.10); --calm-border: rgba(59,142,224,0.35); --calm-text: #a9d3f0;
+    --btn: #3b7dd8; --btn-text: #fff;
+  }
+  :root[data-theme=&quot;light&quot;] {
+    --bg: #f3f2ee; --panel: #ffffff; --card: #fafaf8; --card-2: #f1f0ec;
+    --border: #dedbd2; --text: #16181c; --muted: #6b6b66;
+    --note-bg: #fff6e6; --note-border: #ecd8ab; --note-text: #6b4c10;
+    --calm-bg: #eaf3fc; --calm-border: #bcd7f2; --calm-text: #234a75;
+    --btn: #2a78d6; --btn-text: #fff;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; overflow-x: hidden; }
+  body {
+    font-family: var(--font); font-size: var(--t-md); line-height: 1.45;
+    background: var(--bg); color: var(--text);
+    padding: var(--s4) var(--s4) 48px;
+    transition: background-color 200ms, color 200ms;
+  }
+  button { font: inherit; cursor: pointer; }
+  button, .row-btn { transition: background-color 200ms, color 200ms, border-color 200ms; }
+
+  /* ---- page chrome ---- */
+  .top { max-width: 820px; margin: 0 auto var(--s5); display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; justify-content: space-between; }
+  .top h1 { font-size: var(--t-md); font-weight: 600; margin: 0; }
+  .top .sub { font-size: var(--t-sm); color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { background: transparent; color: var(--muted); border: 0; padding: var(--s2) var(--s3); font-size: var(--t-sm); font-weight: 500; }
+  .seg button.on { background: var(--btn); color: var(--btn-text); }
+  .ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: var(--s2) var(--s3); font-size: var(--t-sm); }
+  .ghost:hover { color: var(--text); }
+  .stage { max-width: 820px; margin: 0 auto; }
+  .view { display: none; } .view.on { display: block; }
+  .caption { margin-top: var(--s4); font-size: var(--t-sm); color: var(--muted); text-align: center; }
+
+  /* ---- console ---- */
+  .console { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: var(--s4); }
+  .console-head { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; justify-content: space-between; padding-bottom: var(--s3); border-bottom: 1px solid var(--border); margin-bottom: var(--s4); }
+  .console-head .who { font-weight: 600; }
+  .console-head .when { font-size: var(--t-sm); color: var(--muted); }
+  .cards { display: flex; flex-wrap: wrap; gap: var(--s4); }
+  .card { flex: 1 1 280px; max-width: calc(50% - var(--s2)); min-width: 0; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--s4); }
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+  .name { font-weight: 600; }
+  .badge { font-size: var(--t-sm); padding: 2px var(--s2); border-radius: 999px; font-weight: 600; background: rgba(79,191,123,0.15); color: var(--green); white-space: nowrap; }
+  .chip { font-size: var(--t-sm); color: var(--muted); }
+  .tags { font-size: var(--t-sm); color: var(--muted); margin: var(--s1) 0 var(--s3); }
+  .label { font-size: var(--t-sm); color: var(--muted); }
+  .num { font-size: var(--t-lg); font-weight: 700; line-height: 1.1; }
+  .num.quiet { color: var(--amber); } .num.busy { color: var(--blue); }
+  .spark { display: block; width: 100%; height: 34px; margin: var(--s2) 0 var(--s3); }
+  .why-btn { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: var(--s2) var(--s3); font-size: var(--t-sm); }
+  .why-btn:hover { border-color: var(--btn); }
+  .why { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 200ms ease, opacity 200ms ease; }
+  .why.open { max-height: 320px; opacity: 1; }
+  .why-in { padding-top: var(--s3); margin-top: var(--s3); border-top: 1px dashed var(--border); font-size: var(--t-sm); }
+  .kv { display: flex; justify-content: space-between; color: var(--muted); padding: 2px 0; }
+  .kv b { color: var(--text); }
+  .note { margin-top: var(--s2); padding: var(--s2) var(--s3); border-radius: 8px; border: 1px solid var(--note-border); background: var(--note-bg); color: var(--note-text); }
+  .note.calm { border-color: var(--calm-border); background: var(--calm-bg); color: var(--calm-text); }
+  .act { margin-top: var(--s2); width: 100%; background: var(--btn); color: var(--btn-text); border: 0; border-radius: 8px; padding: var(--s2) var(--s3); font-size: var(--t-sm); font-weight: 600; }
+  .act.done { background: var(--green); color: #0b2a17; }
+  .act-line { font-size: var(--t-sm); color: var(--muted); margin-top: var(--s1); min-height: 16px; }
+  .compare { margin-top: var(--s4); text-align: center; }
+  .compare button { background: none; border: 0; color: var(--muted); text-decoration: underline; font-size: var(--t-sm); }
+  .compare button:hover { color: var(--text); }
+
+  /* roster */
+  .roster-tools { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin-bottom: var(--s3); font-size: var(--t-sm); color: var(--muted); }
+  .roster { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .r-head, .r-row { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) 56px 56px minmax(0,1.2fr) 64px; gap: var(--s2); align-items: center; padding: var(--s2) var(--s3); }
+  .r-head { font-size: var(--t-sm); color: var(--muted); background: var(--card-2); }
+  .r-row { border-top: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: var(--t-sm); }
+  .r-row:hover { background: var(--card-2); }
+  .r-row .name { font-size: var(--t-sm); }
+  .r-row .n { font-weight: 700; }
+  .r-row .muted, .r-head .muted { color: var(--muted); }
+  .r-row span, .r-head span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { display: inline-block; font-size: var(--t-sm); padding: 1px var(--s2); border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .pill.miss { border-color: var(--note-border); background: var(--note-bg); color: var(--note-text); }
+  .pill.down { border-color: rgba(235,104,52,0.4); background: rgba(235,104,52,0.10); color: var(--orange); }
+  .pill.ok { border-color: rgba(79,191,123,0.35); background: rgba(79,191,123,0.10); color: var(--green); }
+  .pill .short { display: none; }
+  .r-spark { width: 64px; height: 22px; }
+  .r-detail { border-top: 1px solid var(--border); background: var(--card); padding: 0 var(--s3); }
+  .r-detail .why-in { border-top: 0; margin-top: 0; padding: var(--s2) 0 var(--s3); }
+  .foot { font-size: var(--t-sm); color: var(--muted); margin-top: var(--s3); }
+
+  /* ---- phone ---- */
+  .phone-tools { display: flex; justify-content: center; margin-bottom: var(--s4); }
+  .phone { width: 320px; max-width: 100%; margin: 0 auto; background: #fff; border-radius: 32px; border: 8px solid #1c1c1c; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.45); }
+  .screen { background: #f4f2ee; color: #1c1c1c; min-height: 560px; padding: var(--s4) var(--s4) var(--s5); display: none; }
+  .screen.on { display: block; }
+  .p-status { font-size: var(--t-sm); color: #6b6b6b; text-align: center; }
+  .p-app { font-size: var(--t-sm); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #b5502f; text-align: center; margin: var(--s1) 0 var(--s4); }
+  .p-title { font-weight: 600; margin-bottom: var(--s3); }
+  .stat { text-align: center; margin-bottom: var(--s4); }
+  .stat .num { color: #1c1c1c; }
+  .stat .label, .stat .usual { font-size: var(--t-sm); color: #6b6b6b; }
+  .p-box { background: #fff; border: 1px solid #e4e0d8; border-radius: var(--radius); padding: var(--s3) var(--s4); margin-bottom: var(--s3); }
+  .p-row { display: flex; justify-content: space-between; align-items: center; padding: var(--s1) 0; font-size: var(--t-md); }
+  .p-row + .p-row { border-top: 1px solid #efece5; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: var(--s2); }
+  .dot.taken { background: #4a8f5c; } .dot.down { background: #b5502f; } .dot.miss { background: #d1a13a; }
+  .p-note { background: #fff6e6; border: 1px solid #ecd8ab; border-radius: var(--radius); padding: var(--s3) var(--s4); font-size: var(--t-sm); color: #5c4a24; margin-bottom: var(--s4); }
+  .p-note.ok { background: #eaf6ee; border-color: #bfe0c9; color: #1f4d2e; }
+  .ready { display: block; width: 100%; background: #b5502f; color: #fff; border: 0; padding: var(--s3); border-radius: var(--radius); font-weight: 600; }
+  .ready.done { background: #4a8f5c; }
+  .ready:disabled { background: #d8d4cc; color: #6b6b6b; cursor: default; }
+  .ready-line { text-align: center; font-size: var(--t-sm); color: #6b6b6b; margin-top: var(--s2); min-height: 16px; }
+  .p-tabs { display: flex; border-top: 1px solid #e4e0d8; background: #fff; }
+  .p-tabs button { flex: 1; background: none; border: 0; padding: var(--s3); font-size: var(--t-sm); color: #6b6b6b; }
+  .p-tabs button.on { color: #b5502f; font-weight: 600; }
+
+  /* offer screen */
+  .offer { text-align: center; }
+  .offer .what { font-weight: 600; margin-bottom: var(--s1); }
+  .offer .where { font-size: var(--t-sm); color: #6b6b6b; margin-bottom: var(--s4); }
+  .ring { width: 150px; height: 150px; margin: 0 auto var(--s3); position: relative; }
+  .ring svg { width: 150px; height: 150px; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 8; }
+  .ring .track { stroke: #e4e0d8; }
+  .ring .bar { stroke: #b5502f; stroke-linecap: round; }
+  .ring .secs { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring .secs .num { color: #1c1c1c; }
+  .ring .secs .label { font-size: var(--t-sm); color: #6b6b6b; }
+  .offer-btns { display: flex; gap: var(--s2); margin-bottom: var(--s3); }
+  .offer-btns button { flex: 1; padding: var(--s3); border-radius: var(--radius); border: 1px solid #e4e0d8; background: #fff; font-weight: 600; }
+  .offer-btns .yes { background: #4a8f5c; color: #fff; border-color: #4a8f5c; }
+  .offer-btns button:disabled { opacity: 0.45; cursor: default; }
+  .play { display: block; width: 100%; background: #1c1c1c; color: #fff; border: 0; padding: var(--s3); border-radius: var(--radius); font-weight: 600; }
+  .speed { background: none; border: 1px solid #e4e0d8; border-radius: 999px; padding: 2px var(--s2); font-size: var(--t-sm); color: #6b6b6b; margin-left: var(--s2); }
+  .speed.on { background: #1c1c1c; color: #fff; border-color: #1c1c1c; }
+  .result { display: none; }
+  .result.on { display: block; }
+  .result .big { font-weight: 600; margin-bottom: var(--s2); }
+  .replay { background: none; border: 0; color: #6b6b6b; text-decoration: underline; font-size: var(--t-sm); }
+
+  @media (max-width: 600px) {
+    body { padding: var(--s3) var(--s3) 40px; }
+    .cards { flex-direction: column; }
+    .card { flex: 1 1 auto; max-width: none; }
+    .pill .long { display: none; } .pill .short { display: inline; }
+    .r-head, .r-row { grid-template-columns: minmax(0,1.5fr) 44px minmax(0,1.3fr) 56px; }
+    .r-head .hide-sm, .r-row .hide-sm { display: none; }
+    .r-spark { width: 56px; }
+  }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;div class=&quot;top&quot;&gt;
+  &lt;div&gt;
+    &lt;h1&gt;Quiet responders — click-through&lt;/h1&gt;
+    &lt;div class=&quot;sub&quot;&gt;Concept, not a spec. Numbers are from &lt;code&gt;callout-history.csv&lt;/code&gt;.&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;display:flex; gap:var(--s2); align-items:center;&quot;&gt;
+    &lt;div class=&quot;seg&quot; id=&quot;viewSeg&quot;&gt;
+      &lt;button class=&quot;on&quot; data-view=&quot;console&quot;&gt;Kip&#x27;s console&lt;/button&gt;
+      &lt;button data-view=&quot;phone&quot;&gt;Mite&#x27;s phone&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;button class=&quot;ghost&quot; id=&quot;themeBtn&quot; title=&quot;Kip asked for dark mode. It&#x27;s the default.&quot;&gt;Light&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;stage&quot;&gt;
+
+  &lt;!-- ================= CONSOLE ================= --&gt;
+  &lt;div class=&quot;view on&quot; id=&quot;view-console&quot;&gt;
+    &lt;div class=&quot;console&quot;&gt;
+      &lt;div class=&quot;console-head&quot;&gt;
+        &lt;div&gt;
+          &lt;div class=&quot;who&quot;&gt;Coverage — Kip&lt;/div&gt;
+          &lt;div class=&quot;when&quot;&gt;Tue 22 Sep · 23:10&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;seg&quot; id=&quot;rosterSeg&quot;&gt;
+          &lt;button class=&quot;on&quot; data-mode=&quot;cards&quot;&gt;Kip&#x27;s cards (2)&lt;/button&gt;
+          &lt;button data-mode=&quot;roster&quot;&gt;All responders (16)&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+
+      &lt;!-- cards --&gt;
+      &lt;div id=&quot;cards&quot;&gt;
+        &lt;div class=&quot;cards&quot; id=&quot;cardGrid&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;compare&quot;&gt;&lt;button id=&quot;compareBtn&quot;&gt;Compare with a responder who turns work down →&lt;/button&gt;&lt;/div&gt;
+        &lt;div class=&quot;caption&quot;&gt;Same coverage card Kip already has. The count is the only big number; &quot;Why?&quot; holds the rest.&lt;/div&gt;
+      &lt;/div&gt;
+
+      &lt;!-- roster --&gt;
+      &lt;div id=&quot;roster&quot; style=&quot;display:none&quot;&gt;
+        &lt;div class=&quot;roster-tools&quot;&gt;
+          &lt;span&gt;Sort:&lt;/span&gt;
+          &lt;div class=&quot;seg&quot; id=&quot;sortSeg&quot;&gt;
+            &lt;button class=&quot;on&quot; data-sort=&quot;quiet&quot;&gt;Quiet, not turning down&lt;/button&gt;
+            &lt;button data-sort=&quot;week&quot;&gt;This week&lt;/button&gt;
+            &lt;button data-sort=&quot;name&quot;&gt;Name&lt;/button&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;roster&quot; id=&quot;rosterList&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;foot&quot;&gt;16 responders in the export, every handler. The turned-down vs. gone-before-answered split is illustrative — the export doesn&#x27;t record it. That&#x27;s open question #1 in the brief.&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- ================= PHONE ================= --&gt;
+  &lt;div class=&quot;view&quot; id=&quot;view-phone&quot;&gt;
+    &lt;div class=&quot;phone-tools&quot;&gt;
+      &lt;div class=&quot;seg&quot; id=&quot;weekSeg&quot;&gt;
+        &lt;button class=&quot;on&quot; data-week=&quot;quiet&quot;&gt;Quiet week (31 Aug)&lt;/button&gt;
+        &lt;button data-week=&quot;normal&quot;&gt;Normal week (3 Aug)&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;phone&quot;&gt;
+      &lt;!-- history --&gt;
+      &lt;div class=&quot;screen on&quot; id=&quot;scr-history&quot;&gt;
+        &lt;div class=&quot;p-status&quot;&gt;Meteor Mite · cover identity only&lt;/div&gt;
+        &lt;div class=&quot;p-app&quot;&gt;Rook Dispatch&lt;/div&gt;
+        &lt;div class=&quot;p-title&quot;&gt;Your history&lt;/div&gt;
+        &lt;div class=&quot;stat&quot;&gt;
+          &lt;div class=&quot;num&quot; id=&quot;pNum&quot;&gt;1&lt;/div&gt;
+          &lt;div class=&quot;label&quot; id=&quot;pNumLabel&quot;&gt;callout offered this week&lt;/div&gt;
+          &lt;div class=&quot;usual&quot;&gt;usual pace about 11&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;p-box&quot;&gt;
+          &lt;div class=&quot;p-row&quot;&gt;&lt;span&gt;&lt;span class=&quot;dot taken&quot;&gt;&lt;/span&gt;Taken&lt;/span&gt;&lt;span id=&quot;pTaken&quot;&gt;0&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;p-row&quot;&gt;&lt;span&gt;&lt;span class=&quot;dot down&quot;&gt;&lt;/span&gt;Turned down&lt;/span&gt;&lt;span id=&quot;pDown&quot;&gt;0&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;p-row&quot;&gt;&lt;span&gt;&lt;span class=&quot;dot miss&quot;&gt;&lt;/span&gt;Gone before you answered&lt;/span&gt;&lt;span id=&quot;pMiss&quot;&gt;4&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;p-note&quot; id=&quot;pNote&quot;&gt;&lt;/div&gt;
+        &lt;button class=&quot;ready&quot; id=&quot;readyBtn&quot;&gt;I&#x27;m ready&lt;/button&gt;
+        &lt;div class=&quot;ready-line&quot; id=&quot;readyLine&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+
+      &lt;!-- offer --&gt;
+      &lt;div class=&quot;screen offer&quot; id=&quot;scr-offer&quot;&gt;
+        &lt;div class=&quot;p-status&quot;&gt;Meteor Mite · cover identity only&lt;/div&gt;
+        &lt;div class=&quot;p-app&quot;&gt;Rook Dispatch&lt;/div&gt;
+        &lt;div id=&quot;offerLive&quot;&gt;
+          &lt;div class=&quot;what&quot;&gt;Callout — structural fire, Riverside&lt;/div&gt;
+          &lt;div class=&quot;where&quot;&gt;needs cold-weather · 14 min away · offered to you&lt;/div&gt;
+          &lt;div class=&quot;ring&quot;&gt;
+            &lt;svg viewBox=&quot;0 0 150 150&quot;&gt;&lt;circle class=&quot;track&quot; cx=&quot;75&quot; cy=&quot;75&quot; r=&quot;66&quot;/&gt;&lt;circle class=&quot;bar&quot; id=&quot;ringBar&quot; cx=&quot;75&quot; cy=&quot;75&quot; r=&quot;66&quot;/&gt;&lt;/svg&gt;
+            &lt;div class=&quot;secs&quot;&gt;&lt;div class=&quot;num&quot; id=&quot;secs&quot;&gt;60&lt;/div&gt;&lt;div class=&quot;label&quot;&gt;seconds to answer&lt;/div&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;offer-btns&quot;&gt;
+            &lt;button class=&quot;yes&quot; id=&quot;btnTake&quot; disabled&gt;Take it&lt;/button&gt;
+            &lt;button id=&quot;btnDown&quot; disabled&gt;Turn down&lt;/button&gt;
+          &lt;/div&gt;
+          &lt;button class=&quot;play&quot; id=&quot;playBtn&quot;&gt;▶ Play a 60-second offer&lt;/button&gt;
+          &lt;div class=&quot;ready-line&quot;&gt;Real time &lt;button class=&quot;speed&quot; id=&quot;speedBtn&quot;&gt;×10&lt;/button&gt;&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;result&quot; id=&quot;offerResult&quot;&gt;
+          &lt;div class=&quot;big&quot; id=&quot;resTitle&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;p-note&quot; id=&quot;resNote&quot;&gt;&lt;/div&gt;
+          &lt;button class=&quot;replay&quot; id=&quot;replayBtn&quot;&gt;Replay&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+
+      &lt;div class=&quot;p-tabs&quot;&gt;
+        &lt;button class=&quot;on&quot; data-scr=&quot;history&quot;&gt;Your history&lt;/button&gt;
+        &lt;button data-scr=&quot;offer&quot;&gt;Offer&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;caption&quot; id=&quot;phoneCaption&quot;&gt;Ironvale asked her handler for a way to see her own history (T-008). There isn&#x27;t one. This is it.&lt;/div&gt;
+  &lt;/div&gt;
+
+&lt;/div&gt;
+
+&lt;script&gt;
+  // ---------- data (00-rook/data/callout-history.csv, weeks of 29 Jun → 31 Aug) ----------
+  const ROSTER = [
+    {name:&quot;Meteor Mite&quot;,handler:&quot;Kip&quot;,sent:[11,12,10,11,12,11,10,4,2,1],taken:[7,9,6,7,9,8,4,1,0,0],usual:11,tags:&quot;flight · cold-weather&quot;},
+    {name:&quot;The Gale&quot;,handler:&quot;Kip&quot;,sent:[13,12,13,14,13,13,15,17,20,21],taken:[10,9,10,11,11,10,9,12,14,16],usual:13,tags:&quot;structural-entry · hazmat-tolerant&quot;},
+    {name:&quot;Stormwrack&quot;,handler:&quot;Renata Kovač&quot;,sent:[13,13,12,14,13,13,14,16,18,19],taken:[10,11,9,12,10,10,8,12,13,15],usual:13},
+    {name:&quot;Farlight&quot;,handler:&quot;Linda Pruitt&quot;,sent:[12,12,11,12,13,12,10,3,1,0],taken:[9,9,8,9,10,8,4,0,0,0],usual:12},
+    {name:&quot;Vesper&quot;,handler:&quot;Aunt Dot&quot;,sent:[14,13,15,14,13,14,12,5,2,1],taken:[11,10,13,11,11,12,6,1,0,0],usual:14},
+    {name:&quot;The Undertow&quot;,handler:&quot;Desmond Okafor&quot;,sent:[12,11,12,13,12,12,11,4,1,1],taken:[9,9,9,10,10,9,4,1,0,0],usual:12},
+    {name:&quot;Corporal Ashgrove&quot;,handler:&quot;Yusuf Demir&quot;,sent:[10,11,10,9,10,10,10,8,7,7],taken:[8,9,7,7,8,8,6,5,5,5],usual:10},
+    {name:&quot;Halfmoon&quot;,handler:&quot;Simone Fischer&quot;,sent:[11,10,11,12,11,11,11,9,8,8],taken:[8,7,8,8,9,8,6,5,5,7],usual:11},
+    {name:&quot;Sgt. Bulwark&quot;,handler:&quot;Halloran&quot;,sent:[9,9,10,9,8,9,10,10,11,11],taken:[7,7,8,7,5,7,5,8,7,8],usual:9},
+    {name:&quot;The Longcast&quot;,handler:&quot;Graham Petrov&quot;,sent:[7,7,8,7,7,7,8,8,9,9],taken:[5,5,7,5,5,5,5,6,5,7],usual:7},
+    {name:&quot;Cindermark&quot;,handler:&quot;Farid Haddad&quot;,sent:[9,9,8,10,9,9,10,11,12,12],taken:[7,8,6,7,7,8,6,8,8,9],usual:9},
+    {name:&quot;The Drift&quot;,handler:&quot;Beatrice Calloway&quot;,sent:[6,6,7,6,6,6,7,7,8,8],taken:[5,5,6,5,5,5,4,5,6,5],usual:6},
+    {name:&quot;Nightwell&quot;,handler:&quot;Marjorie Sung&quot;,sent:[15,14,15,16,15,15,16,18,20,21],taken:[11,10,12,12,11,12,9,14,13,15],usual:15},
+    {name:&quot;Captain Vantage&quot;,handler:&quot;Mr. Ambrose&quot;,sent:[12,13,12,11,12,12,13,15,17,18],taken:[10,10,8,7,9,9,8,11,13,13],usual:12},
+    {name:&quot;Ironvale&quot;,handler:&quot;Teresa Alvarez&quot;,sent:[8,8,9,8,7,8,9,10,11,12],taken:[6,5,8,6,5,7,5,6,8,9],usual:8},
+    {name:&quot;Sgt. Falkirk&quot;,handler:&quot;Owen Bramwell&quot;,sent:[10,10,11,10,9,10,11,13,15,16],taken:[9,8,8,8,7,8,7,9,11,11],usual:10,tags:&quot;aquatic · de-escalation&quot;},
+  ];
+
+  // Illustrative split. The export only has offered/taken; decline vs. missed is not recorded (brief, #1).
+  // Rows are this week, so they add up to the big number. &quot;Since 4.2&quot; (weeks of 17–31 Aug) feeds the note.
+  const sum = a =&gt; a.reduce((x, y) =&gt; x + y, 0);
+  function split(r) {
+    const now = r.sent[9], taken = r.taken[9], notTaken = now - taken;
+    const usualShare = sum(r.sent.slice(0, 6).map((s, i) =&gt; s - r.taken[i])) / sum(r.sent.slice(0, 6));
+    const nowShare = now ? notTaken / now : 0;
+    const quiet = now &lt; r.usual * 0.5;
+    const turningDown = !quiet &amp;&amp; now &gt;= r.usual * 0.8 &amp;&amp; nowShare &gt; usualShare + 0.08;
+    const reason = quiet ? &#x27;miss&#x27; : (turningDown ? &#x27;down&#x27; : &#x27;ok&#x27;);
+    const down = reason === &#x27;miss&#x27; ? 0 : reason === &#x27;down&#x27; ? notTaken : Math.round(notTaken * 0.6);
+    const missed = notTaken - down;
+    const since = { offered: sum(r.sent.slice(7)), taken: sum(r.taken.slice(7)) };
+    since.notTaken = since.offered - since.taken;
+    return { now, taken, down, missed, reason, since };
+  }
+  const REASON_LABEL = { miss: &#x27;Gone before answered&#x27;, down: &#x27;Turning down&#x27;, ok: &#x27;Steady&#x27; };
+  const REASON_SHORT = { miss: &#x27;Missed&#x27;, down: &#x27;Declines&#x27;, ok: &#x27;Steady&#x27; };
+
+  function sparkSVG(series, color, w, h) {
+    const max = Math.max(...series, 1), n = series.length;
+    const pts = series.map((v, i) =&gt; [ (i / (n - 1)) * (w - 6) + 3, h - 3 - (v / max) * (h - 8) ]);
+    const d = pts.map(p =&gt; p.join(&#x27;,&#x27;)).join(&#x27; &#x27;);
+    const [lx, ly] = pts[n - 1];
+    return `&lt;svg viewBox=&quot;0 0 ${w} ${h}&quot; preserveAspectRatio=&quot;none&quot; aria-hidden=&quot;true&quot;&gt;
+      &lt;polyline points=&quot;${d}&quot; fill=&quot;none&quot; stroke=&quot;${color}&quot; stroke-width=&quot;2&quot; stroke-linejoin=&quot;round&quot; stroke-linecap=&quot;round&quot; vector-effect=&quot;non-scaling-stroke&quot;/&gt;
+      &lt;circle cx=&quot;${lx}&quot; cy=&quot;${ly}&quot; r=&quot;3&quot; fill=&quot;${color}&quot;/&gt;&lt;/svg&gt;`;
+  }
+
+  function noteFor(r, s) {
+    if (s.reason === &#x27;miss&#x27;) return { cls: &#x27;&#x27;, text: `Quiet, but not turning work down. ${s.since.notTaken} of the last ${s.since.offered} moved on before answered — the 60-second window, and each one lowers ranking the same as a turn-down.` };
+    if (s.reason === &#x27;down&#x27;) return { cls: &#x27;&#x27;, text: `Offered more than usual. ${s.down} turned down this week, none gone before answered — choices, not the window. Ranking treats both the same today; that&#x27;s Marcus&#x27;s question.` };
+    return { cls: &#x27;calm&#x27;, text: &#x27;On usual pace. Nothing here needs a conversation.&#x27; };
+  }
+
+  function whyPanel(r, s, idPrefix) {
+    const n = noteFor(r, s);
+    const first = r.name.split(&#x27; &#x27;).pop();
+    return `&lt;div class=&quot;why-in&quot;&gt;
+      &lt;div class=&quot;kv&quot;&gt;&lt;span&gt;Taken&lt;/span&gt;&lt;b&gt;${s.taken}&lt;/b&gt;&lt;/div&gt;
+      &lt;div class=&quot;kv&quot;&gt;&lt;span&gt;Turned down&lt;/span&gt;&lt;b&gt;${s.down}&lt;/b&gt;&lt;/div&gt;
+      &lt;div class=&quot;kv&quot;&gt;&lt;span&gt;Gone before answered&lt;/span&gt;&lt;b&gt;${s.missed}&lt;/b&gt;&lt;/div&gt;
+      &lt;div class=&quot;note ${n.cls}&quot;&gt;${n.text}&lt;/div&gt;
+      ${s.reason !== &#x27;ok&#x27; ? `&lt;button class=&quot;act&quot; data-name=&quot;${r.name}&quot;&gt;Check in with ${first}&lt;/button&gt;&lt;div class=&quot;act-line&quot;&gt;&lt;/div&gt;` : &#x27;&#x27;}
+    &lt;/div&gt;`;
+  }
+
+  // ---------- cards ----------
+  function cardHTML(r) {
+    const s = split(r);
+    const quiet = s.reason === &#x27;miss&#x27;;
+    const color = quiet ? &#x27;var(--amber)&#x27; : &#x27;var(--blue)&#x27;;
+    return `&lt;div class=&quot;card&quot; data-name=&quot;${r.name}&quot;&gt;
+      &lt;div class=&quot;card-top&quot;&gt;&lt;span class=&quot;name&quot;&gt;${r.name}&lt;/span&gt;&lt;span class=&quot;badge&quot;&gt;Available&lt;/span&gt;&lt;/div&gt;
+      &lt;div class=&quot;tags&quot;&gt;${r.tags || &#x27;&#x27;} ${r.handler !== &#x27;Kip&#x27; ? `&lt;span class=&quot;chip&quot;&gt;· handler ${r.handler}&lt;/span&gt;` : &#x27;&#x27;}&lt;/div&gt;
+      &lt;div class=&quot;label&quot;&gt;Callouts offered this week&lt;/div&gt;
+      &lt;div class=&quot;num ${quiet ? &#x27;quiet&#x27; : &#x27;busy&#x27;}&quot;&gt;${s.now}&lt;/div&gt;
+      &lt;div class=&quot;label&quot;&gt;usual pace ~${r.usual}&lt;/div&gt;
+      &lt;div class=&quot;spark&quot;&gt;${sparkSVG(r.sent, color, 260, 34)}&lt;/div&gt;
+      &lt;button class=&quot;why-btn&quot;&gt;Why?&lt;/button&gt;
+      &lt;div class=&quot;why&quot;&gt;${whyPanel(r, s)}&lt;/div&gt;
+    &lt;/div&gt;`;
+  }
+  const grid = document.getElementById(&#x27;cardGrid&#x27;);
+  grid.innerHTML = ROSTER.filter(r =&gt; r.handler === &#x27;Kip&#x27;).map(cardHTML).join(&#x27;&#x27;);
+
+  document.getElementById(&#x27;compareBtn&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+    const decliner = ROSTER.filter(r =&gt; split(r).reason === &#x27;down&#x27;).sort((a, b) =&gt; split(b).down - split(a).down)[0];
+    grid.insertAdjacentHTML(&#x27;beforeend&#x27;, cardHTML(decliner));
+    e.target.parentElement.remove();
+    document.querySelector(&#x27;#rosterSeg button[data-mode=&quot;cards&quot;]&#x27;).textContent = &quot;Kip&#x27;s cards (2) + 1&quot;;
+  });
+
+  document.addEventListener(&#x27;click&#x27;, e =&gt; {
+    const w = e.target.closest(&#x27;.why-btn&#x27;);
+    if (w) {
+      const p = w.nextElementSibling; p.classList.toggle(&#x27;open&#x27;);
+      w.textContent = p.classList.contains(&#x27;open&#x27;) ? &#x27;Hide&#x27; : &#x27;Why?&#x27;;
+    }
+    const a = e.target.closest(&#x27;.act&#x27;);
+    if (a &amp;&amp; !a.classList.contains(&#x27;done&#x27;)) {
+      a.classList.add(&#x27;done&#x27;);
+      const first = a.dataset.name.split(&#x27; &#x27;).pop();
+      a.textContent = `✓ Sent to ${first} · 23:12`;
+      a.nextElementSibling.textContent = `&quot;Nothing&#x27;s wrong with your record — it&#x27;s the 60-second window. Keep your phone close tonight.&quot;`;
+    }
+  });
+
+  // ---------- roster ----------
+  const sorts = {
+    quiet: (a, b) =&gt; (split(a).reason === &#x27;miss&#x27; ? 0 : 1) - (split(b).reason === &#x27;miss&#x27; ? 0 : 1) || (a.sent[9] / a.usual) - (b.sent[9] / b.usual),
+    week: (a, b) =&gt; a.sent[9] - b.sent[9],
+    name: (a, b) =&gt; a.name.localeCompare(b.name),
+  };
+  function renderRoster(sortKey) {
+    const list = document.getElementById(&#x27;rosterList&#x27;);
+    const rows = [...ROSTER].sort(sorts[sortKey]);
+    list.innerHTML = `&lt;div class=&quot;r-head&quot;&gt;&lt;span&gt;Responder&lt;/span&gt;&lt;span class=&quot;hide-sm&quot;&gt;Handler&lt;/span&gt;&lt;span&gt;This wk&lt;/span&gt;&lt;span class=&quot;hide-sm&quot;&gt;Usual&lt;/span&gt;&lt;span&gt;Why&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/div&gt;` +
+      rows.map(r =&gt; {
+        const s = split(r);
+        const color = s.reason === &#x27;miss&#x27; ? &#x27;var(--amber)&#x27; : &#x27;var(--blue)&#x27;;
+        return `&lt;div class=&quot;r-row&quot; data-name=&quot;${r.name}&quot;&gt;
+          &lt;span class=&quot;name&quot;&gt;${r.name}&lt;/span&gt;
+          &lt;span class=&quot;muted hide-sm&quot;&gt;${r.handler}&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;${s.now}&lt;/span&gt;
+          &lt;span class=&quot;muted hide-sm&quot;&gt;~${r.usual}&lt;/span&gt;
+          &lt;span&gt;&lt;span class=&quot;pill ${s.reason}&quot;&gt;&lt;span class=&quot;long&quot;&gt;${REASON_LABEL[s.reason]}&lt;/span&gt;&lt;span class=&quot;short&quot;&gt;${REASON_SHORT[s.reason]}&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;
+          &lt;span class=&quot;r-spark&quot;&gt;${sparkSVG(r.sent, color, 64, 22)}&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;r-detail why&quot; data-for=&quot;${r.name}&quot;&gt;${whyPanel(r, s)}&lt;/div&gt;`;
+      }).join(&#x27;&#x27;);
+  }
+  renderRoster(&#x27;quiet&#x27;);
+  document.getElementById(&#x27;sortSeg&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+    const b = e.target.closest(&#x27;button&#x27;); if (!b) return;
+    [...e.currentTarget.children].forEach(x =&gt; x.classList.toggle(&#x27;on&#x27;, x === b));
+    renderRoster(b.dataset.sort);
+  });
+  document.getElementById(&#x27;rosterList&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+    const row = e.target.closest(&#x27;.r-row&#x27;); if (!row) return;
+    row.nextElementSibling.classList.toggle(&#x27;open&#x27;);
+  });
+  document.getElementById(&#x27;rosterSeg&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+    const b = e.target.closest(&#x27;button&#x27;); if (!b) return;
+    [...e.currentTarget.children].forEach(x =&gt; x.classList.toggle(&#x27;on&#x27;, x === b));
+    document.getElementById(&#x27;cards&#x27;).style.display = b.dataset.mode === &#x27;cards&#x27; ? &#x27;&#x27; : &#x27;none&#x27;;
+    document.getElementById(&#x27;roster&#x27;).style.display = b.dataset.mode === &#x27;roster&#x27; ? &#x27;&#x27; : &#x27;none&#x27;;
+  });
+
+  // ---------- page chrome ----------
+  document.getElementById(&#x27;viewSeg&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+    const b = e.target.closest(&#x27;button&#x27;); if (!b) return;
+    [...e.currentTarget.children].forEach(x =&gt; x.classList.toggle(&#x27;on&#x27;, x === b));
+    document.querySelectorAll(&#x27;.view&#x27;).forEach(v =&gt; v.classList.toggle(&#x27;on&#x27;, v.id === &#x27;view-&#x27; + b.dataset.view));
+  });
+  const themeBtn = document.getElementById(&#x27;themeBtn&#x27;);
+  themeBtn.addEventListener(&#x27;click&#x27;, () =&gt; {
+    const root = document.documentElement;
+    const next = root.dataset.theme === &#x27;dark&#x27; ? &#x27;light&#x27; : &#x27;dark&#x27;;
+    root.dataset.theme = next;
+    themeBtn.textContent = next === &#x27;dark&#x27; ? &#x27;Light&#x27; : &#x27;Dark&#x27;;
+  });
+
+  // ---------- phone: history ----------
+  const WEEKS = {
+    quiet:  { num: 1,  taken: 0, down: 0, miss: 1, note: &quot;Nothing is wrong with your account. 6 of your last 7 callouts moved on before you answered — the window is 60 seconds, and each one lowers how often you&#x27;re offered work, the same as turning one down.&quot;, ok: false },
+    normal: { num: 11, taken: 8, down: 1, miss: 2, note: &quot;You&#x27;re on your usual pace. Two moved on before you answered this week — that&#x27;s typical, and nothing here needs fixing.&quot;, ok: true },
+  };
+  const readyBtn = document.getElementById(&#x27;readyBtn&#x27;), readyLine = document.getElementById(&#x27;readyLine&#x27;);
+  function setWeek(k) {
+    const w = WEEKS[k];
+    document.getElementById(&#x27;pNum&#x27;).textContent = w.num;
+    document.getElementById(&#x27;pNumLabel&#x27;).textContent = w.num === 1 ? &#x27;callout offered this week&#x27; : &#x27;callouts offered this week&#x27;;
+    document.getElementById(&#x27;pTaken&#x27;).textContent = w.taken;
+    document.getElementById(&#x27;pDown&#x27;).textContent = w.down;
+    document.getElementById(&#x27;pMiss&#x27;).textContent = w.miss;
+    const note = document.getElementById(&#x27;pNote&#x27;);
+    note.textContent = w.note; note.classList.toggle(&#x27;ok&#x27;, w.ok);
+    readyBtn.classList.remove(&#x27;done&#x27;);
+    readyBtn.disabled = w.ok;
+    readyBtn.textContent = w.ok ? &#x27;Standing is normal&#x27; : &quot;I&#x27;m ready&quot;;
+    readyLine.textContent = &#x27;&#x27;;
+    currentWeek = k; updateCaption();
+  }
+  let currentWeek = &#x27;quiet&#x27;, currentScreen = &#x27;history&#x27;;
+  function updateCaption() {
+    const c = document.getElementById(&#x27;phoneCaption&#x27;);
+    if (currentScreen === &#x27;offer&#x27;) c.textContent = &#x27;The 60 seconds Ambrose watched Captain Vantage lose with one boot on (T-001). Play it, or let it run out.&#x27;;
+    else c.textContent = currentWeek === &#x27;normal&#x27;
+      ? &#x27;Same screen on a normal week: no warning, no button to press. The screen only asks for something when there is something to do.&#x27;
+      : &#x27;Ironvale asked her handler for a way to see her own history (T-008). There isn\&#x27;t one. This is it.&#x27;;
+  }
+  setWeek(&#x27;quiet&#x27;);
+  document.getElementById(&#x27;weekSeg&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+    const b = e.target.closest(&#x27;button&#x27;); if (!b) return;
+    [...e.currentTarget.children].forEach(x =&gt; x.classList.toggle(&#x27;on&#x27;, x === b));
+    setWeek(b.dataset.week);
+  });
+  readyBtn.addEventListener(&#x27;click&#x27;, () =&gt; {
+    if (readyBtn.disabled || readyBtn.classList.contains(&#x27;done&#x27;)) return;
+    readyBtn.classList.add(&#x27;done&#x27;);
+    readyBtn.textContent = &#x27;Standing refreshed&#x27;;
+    readyLine.innerHTML = &#x27;Available again in 4h · counts like one taken callout toward your ranking&lt;br&gt;&lt;i&gt;Proposed, not final — the brief lists this as undefined.&lt;/i&gt;&#x27;;
+  });
+
+  // ---------- phone: offer ----------
+  document.querySelector(&#x27;.p-tabs&#x27;).addEventListener(&#x27;click&#x27;, e =&gt; {
+    const b = e.target.closest(&#x27;button&#x27;); if (!b) return;
+    [...e.currentTarget.children].forEach(x =&gt; x.classList.toggle(&#x27;on&#x27;, x === b));
+    document.querySelectorAll(&#x27;.screen&#x27;).forEach(s =&gt; s.classList.toggle(&#x27;on&#x27;, s.id === &#x27;scr-&#x27; + b.dataset.scr));
+    currentScreen = b.dataset.scr; updateCaption();
+  });
+  const CIRC = 2 * Math.PI * 66;
+  const ringBar = document.getElementById(&#x27;ringBar&#x27;), secsEl = document.getElementById(&#x27;secs&#x27;);
+  ringBar.style.strokeDasharray = CIRC; ringBar.style.strokeDashoffset = 0;
+  let timer = null, left = 60, speed = 1;
+  const playBtn = document.getElementById(&#x27;playBtn&#x27;), speedBtn = document.getElementById(&#x27;speedBtn&#x27;);
+  const btnTake = document.getElementById(&#x27;btnTake&#x27;), btnDown = document.getElementById(&#x27;btnDown&#x27;);
+  function paint() { secsEl.textContent = Math.ceil(left); ringBar.style.strokeDashoffset = CIRC * (1 - left / 60); }
+  function endOffer(kind) {
+    clearInterval(timer); timer = null;
+    document.getElementById(&#x27;offerLive&#x27;).style.display = &#x27;none&#x27;;
+    const res = document.getElementById(&#x27;offerResult&#x27;); res.classList.add(&#x27;on&#x27;);
+    const t = document.getElementById(&#x27;resTitle&#x27;), n = document.getElementById(&#x27;resNote&#x27;);
+    if (kind === &#x27;miss&#x27;) { t.textContent = &#x27;Moved on to the next responder.&#x27;; n.textContent = &#x27;Recorded as: gone before you answered — not a turn-down. Today the ranking code can\&#x27;t tell the difference. That line is what the brief is about.&#x27;; n.className = &#x27;p-note&#x27;; }
+    if (kind === &#x27;take&#x27;) { t.textContent = &#x27;Taken. You\&#x27;re on your way.&#x27;; n.textContent = &#x27;Counts toward your ranking. Your handler can see it now.&#x27;; n.className = &#x27;p-note ok&#x27;; }
+    if (kind === &#x27;down&#x27;) { t.textContent = &#x27;Turned down.&#x27;; n.textContent = &#x27;Recorded as a turn-down. This is the one that should lower ranking — and today it does, by exactly as much as a missed window.&#x27;; n.className = &#x27;p-note&#x27;; }
+  }
+  playBtn.addEventListener(&#x27;click&#x27;, () =&gt; {
+    if (timer) return;
+    left = 60; paint(); btnTake.disabled = false; btnDown.disabled = false; playBtn.textContent = &#x27;Offer is live…&#x27;;
+    timer = setInterval(() =&gt; { left -= 0.1 * speed; if (left &lt;= 0) { left = 0; paint(); endOffer(&#x27;miss&#x27;); } else paint(); }, 100);
+  });
+  speedBtn.addEventListener(&#x27;click&#x27;, () =&gt; { speed = speed === 1 ? 10 : 1; speedBtn.classList.toggle(&#x27;on&#x27;, speed === 10); });
+  btnTake.addEventListener(&#x27;click&#x27;, () =&gt; endOffer(&#x27;take&#x27;));
+  btnDown.addEventListener(&#x27;click&#x27;, () =&gt; endOffer(&#x27;down&#x27;));
+  document.getElementById(&#x27;replayBtn&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; {
+    document.getElementById(&#x27;offerResult&#x27;).classList.remove(&#x27;on&#x27;);
+    document.getElementById(&#x27;offerLive&#x27;).style.display = &#x27;&#x27;;
+    left = 60; paint(); btnTake.disabled = true; btnDown.disabled = true; playBtn.textContent = &#x27;▶ Play a 60-second offer&#x27;;
+  });
+  paint();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+    </div>
+    <p class="muted small" style="margin-top:10px">This is a concept, not a spec. The brief itself says so. The engineering fix underneath it is to record missed offers separately, and to let the score recover (Wen's 2019 question). That is Wen's call to scope.</p>
+  </div>
+</section>
+
+<!-- 11 · M6 -->
+<section class="slide" id="s-m6">
+  <div class="inner reveal">
+    <span class="badge"><span class="num">6</span> Sidekicks</span>
+    <h2 style="margin-top:10px">Artifact: a skill that scores any brief out of 8</h2>
+    <div class="mod">
+      <div class="card">
+        <h3>review-checklist-skills</h3>
+        <p class="small muted">Four checks, each with two yes/no criteria. Only 8/8 moves on.</p>
+        <div class="grid g2" style="gap:10px;margin:10px 0 14px">
+          <div class="card" style="padding:12px"><b>1 · Owner named</b><div class="small muted">named, and accountable now</div></div>
+          <div class="card" style="padding:12px"><b>2 · Success measure</b><div class="small muted">one signal, with a baseline or target</div></div>
+          <div class="card" style="padding:12px"><b>3 · Scope holds</b><div class="small muted">stated, and the end matches the start</div></div>
+          <div class="card" style="padding:12px"><b>4 · Problem before fix</b><div class="small muted">comes first, stands on its own</div></div>
+        </div>
+        <h3 style="font-size:15px">Scores this week</h3>
+        <div id="scores"></div>
+      </div>
+      <div>
+        <div class="prompt"><span class="who">My prompt → the scoring</span>on the review ckeclist skill - score based on certain crietria</div>
+        <p class="src">06-sidekicks/prompts.md · prompt 4</p>
+        <div class="prompt" style="margin-top:12px"><span class="who">My prompt → the finding</span>run this skill on my brief</div>
+        <p class="src">06-sidekicks/prompts.md · prompt 6</p>
+        <div class="card" style="margin-top:12px"><h3>Finding: my own brief scored 3/8</h3><p class="small muted" style="margin:0">It had no named owner and no chosen success measure, and "I'm ready" breaks its own scope. The gate caught the same gaps in my work that it catches in anyone else's.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Why it won't happen again -->
+<section class="slide" id="s-gate">
+  <div class="inner reveal">
+    <p class="kicker">How the skill stops this happening again</p>
+    <h2>4.2 would have failed every check</h2>
+    <p class="lede" style="margin-bottom:18px">Each check below matches something that went wrong with 4.2, in Rook's own documents.</p>
+    <div class="grid g2">
+      <div class="card check"><div class="ico">1</div><div><span class="miss">Owner named · missed</span><h3>Nobody owned the question</h3><p>Marcus asked on 14 Aug whether the change should apply to people who turn work down. Wen was on PTO, and no one else answered. The roadmap lists each 4.2 item with the driver "Internal" and names no person.</p></div></div>
+      <div class="card check"><div class="ico">2</div><div><span class="miss">Success measure · missed</span><h3>"Went clean" was the bar</h3><p>The only verdict on 13 Aug was "no rollback, no overnight pages". The headline average then recovered to 73%, while four responders stayed near zero. Nothing measured them.</p></div></div>
+      <div class="card check"><div class="ico">3</div><div><span class="miss">Scope holds · missed</span><h3>Two changes, and one item gone</h3><p>The reweight and the timeout cut shipped together, so no one could separate their effects. "Availability Confidence" was committed to 4.2, but it is not in the 4.2 release notes, and no one says it was dropped.</p></div></div>
+      <div class="card check"><div class="ico">4</div><div><span class="miss">Problem before fix · missed</span><h3>The timeout cut stated no problem</h3><p>The reweight named its problem: wide-geography responders were losing callouts. "Ping timeout tuning" gave only its effect: "Offers that go unanswered move to the next responder sooner." It never said who was hurting.</p></div></div>
+    </div>
+    <p class="muted small" style="margin-top:14px">Sources: company/roadmap-q3.pdf · company/release-history.pdf · company/notes/dispatch-slack-thread.txt</p>
+  </div>
+</section>
+
+<!-- 13 · Close -->
+<section class="slide" id="s-next">
+  <div class="inner reveal">
+    <p class="kicker">What happens next</p>
+    <h2>Three decisions, then build</h2>
+    <ol class="steps">
+      <li><span><b>Wen:</b> should a missed window cost the same as a "no", and should the score recover on its own? This is the 2019 question, still open.</span></li>
+      <li><span><b>Me:</b> name an owner and one success signal for the Quiet Responders brief, so it goes from 3/8 to 8/8. The signal: the four back to their usual weekly offers within 6 weeks.</span></li>
+      <li><span><b>Ravi:</b> use real weekly numbers to separate the August season from the two 4.2 changes, before anyone says the problem is solved.</span></li>
+    </ol>
+    <div class="card" style="margin-top:8px"><p style="margin:0">The habit: every brief goes through <b>review-checklist-skills</b> before it moves on. A weekly runner exists for <code>06-sidekicks/briefs/</code>, and it is paused for now.</p></div>
+  </div>
+</section>
+
+</main>
+
+<script id="viz-data" type="application/json">{"weeks": ["2026-06-29", "2026-07-06", "2026-07-13", "2026-07-20", "2026-07-27", "2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"], "acceptance": [76.7, 77.1, 76.4, 75.0, 77.6, 77.9, 54.2, 65.8, 66.7, 72.7], "responders": [{"name": "Meteor Mite", "four": true, "offers": [11, 12, 10, 11, 12, 11, 10, 4, 2, 1]}, {"name": "Farlight", "four": true, "offers": [12, 12, 11, 12, 13, 12, 10, 3, 1, 0]}, {"name": "Vesper", "four": true, "offers": [14, 13, 15, 14, 13, 14, 12, 5, 2, 1]}, {"name": "The Undertow", "four": true, "offers": [12, 11, 12, 13, 12, 12, 11, 4, 1, 1]}, {"name": "Captain Vantage", "four": false, "offers": [12, 13, 12, 11, 12, 12, 13, 15, 17, 18]}, {"name": "Cindermark", "four": false, "offers": [9, 9, 8, 10, 9, 9, 10, 11, 12, 12]}, {"name": "Corporal Ashgrove", "four": false, "offers": [10, 11, 10, 9, 10, 10, 10, 8, 7, 7]}, {"name": "Halfmoon", "four": false, "offers": [11, 10, 11, 12, 11, 11, 11, 9, 8, 8]}, {"name": "Ironvale", "four": false, "offers": [8, 8, 9, 8, 7, 8, 9, 10, 11, 12]}, {"name": "Nightwell", "four": false, "offers": [15, 14, 15, 16, 15, 15, 16, 18, 20, 21]}, {"name": "Sgt. Bulwark", "four": false, "offers": [9, 9, 10, 9, 8, 9, 10, 10, 11, 11]}, {"name": "Sgt. Falkirk", "four": false, "offers": [10, 10, 11, 10, 9, 10, 11, 13, 15, 16]}, {"name": "Stormwrack", "four": false, "offers": [13, 13, 12, 14, 13, 13, 14, 16, 18, 19]}, {"name": "The Drift", "four": false, "offers": [6, 6, 7, 6, 6, 6, 7, 7, 8, 8]}, {"name": "The Gale", "four": false, "offers": [13, 12, 13, 14, 13, 13, 15, 17, 20, 21]}, {"name": "The Longcast", "four": false, "offers": [7, 7, 8, 7, 7, 7, 8, 8, 9, 9]}]}</script>
+<script>
+(function () {
+  const deck = document.getElementById('deck');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dots = document.getElementById('dots');
+  const count = document.getElementById('count');
+  const progress = document.getElementById('progress');
+
+  // Theme toggle (remembered per viewer; storage may be blocked).
+  const root = document.documentElement;
+  try { const t = localStorage.getItem('r42-theme'); if (t) root.dataset.theme = t; } catch (e) {}
+  document.getElementById('theme').addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('r42-theme', root.dataset.theme); } catch (e) {}
+    drawAll();
+  });
+
+  // Navigation.
+  slides.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+    b.addEventListener('click', () => s.scrollIntoView());
+    dots.appendChild(b);
+  });
+  let current = 0;
+  function setCurrent(i) {
+    current = i;
+    count.textContent = (i + 1) + ' / ' + slides.length;
+    progress.style.width = ((i + 1) / slides.length * 100) + '%';
+    dots.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === i));
+  }
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelector('.reveal')?.classList.add('in');
+        if (e.intersectionRatio > 0.5) setCurrent(slides.indexOf(e.target));
+      }
+    });
+  }, { root: deck, threshold: [0.15, 0.55] });
+  slides.forEach(s => io.observe(s));
+  setCurrent(0);
+  document.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('iframe, input, textarea')) return;
+    const next = ['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(e.key);
+    const prev = ['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key);
+    if (!next && !prev) return;
+    e.preventDefault();
+    const i = Math.max(0, Math.min(slides.length - 1, current + (next ? 1 : -1)));
+    slides[i].scrollIntoView();
+  });
+
+  // Data.
+  const data = JSON.parse(document.getElementById('viz-data').textContent);
+  const fmtWeek = w => { const d = new Date(w + 'T00:00:00Z'); return d.getUTCDate() + ' ' + d.toLocaleString('en', { month: 'short', timeZone: 'UTC' }); };
+  const css = n => getComputedStyle(root).getPropertyValue(n).trim();
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (t, a, p) => { const n = document.createElementNS(NS, t); for (const k in a) n.setAttribute(k, a[k]); if (p) p.appendChild(n); return n; };
+
+  // Acceptance line chart with crosshair tooltip.
+  function drawAcc() {
+    const svg = document.getElementById('acc'); svg.innerHTML = '';
+    const W = 560, H = 230, m = { l: 40, r: 16, t: 14, b: 30 };
+    const xs = i => m.l + i * (W - m.l - m.r) / (data.weeks.length - 1);
+    const y0 = 40, y1 = 90, ys = v => m.t + (y1 - v) / (y1 - y0) * (H - m.t - m.b);
+    [40, 50, 60, 70, 80, 90].forEach(v => {
+      el('line', { x1: m.l, x2: W - m.r, y1: ys(v), y2: ys(v), stroke: css('--line'), 'stroke-width': 1 }, svg);
+      const t = el('text', { x: m.l - 8, y: ys(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: css('--muted') }, svg); t.textContent = v + '%';
+    });
+    data.weeks.forEach((w, i) => { if (i % 3 === 0 || i === data.weeks.length - 1) { const t = el('text', { x: xs(i), y: H - 8, 'text-anchor': i === data.weeks.length - 1 ? 'end' : i === 0 ? 'start' : 'middle', 'font-size': 11, fill: css('--muted') }, svg); t.textContent = fmtWeek(w); } });
+    const ri = data.weeks.indexOf('2026-08-10');
+    el('line', { x1: xs(ri), x2: xs(ri), y1: m.t, y2: H - m.b, stroke: css('--muted'), 'stroke-dasharray': '4 4' }, svg);
+    const lt = el('text', { x: xs(ri) + 6, y: m.t + 12, 'font-size': 11, fill: css('--text-2') }, svg); lt.textContent = '4.2 ships (12 Aug)';
+    const d = data.acceptance.map((v, i) => (i ? 'L' : 'M') + xs(i) + ' ' + ys(v)).join(' ');
+    el('path', { d, fill: 'none', stroke: css('--rest'), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    const last = data.acceptance.length - 1;
+    el('circle', { cx: xs(last), cy: ys(data.acceptance[last]), r: 4.5, fill: css('--rest'), stroke: css('--surface'), 'stroke-width': 2 }, svg);
+    const lbl = el('text', { x: xs(last) - 6, y: ys(data.acceptance[last]) - 10, 'text-anchor': 'end', 'font-size': 12, 'font-weight': 700, fill: css('--text') }, svg); lbl.textContent = data.acceptance[last] + '%';
+    const low = el('text', { x: xs(ri) + 6, y: ys(data.acceptance[ri]) + 4, 'font-size': 12, 'font-weight': 700, fill: css('--text') }, svg); low.textContent = data.acceptance[ri] + '%';
+    const cross = el('line', { y1: m.t, y2: H - m.b, stroke: css('--text-2'), 'stroke-width': 1, opacity: 0 }, svg);
+    const dot = el('circle', { r: 5, fill: css('--rest'), stroke: css('--surface'), 'stroke-width': 2, opacity: 0 }, svg);
+    const hit = el('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent' }, svg);
+    const tip = document.getElementById('acc-tip'), wrap = document.getElementById('acc-wrap');
+    function move(ev) {
+      const r = svg.getBoundingClientRect(); const x = (ev.clientX - r.left) * W / r.width;
+      const i = Math.max(0, Math.min(last, Math.round((x - m.l) / ((W - m.l - m.r) / last))));
+      cross.setAttribute('x1', xs(i)); cross.setAttribute('x2', xs(i)); cross.setAttribute('opacity', 1);
+      dot.setAttribute('cx', xs(i)); dot.setAttribute('cy', ys(data.acceptance[i])); dot.setAttribute('opacity', 1);
+      tip.innerHTML = '<b>Week of ' + fmtWeek(data.weeks[i]) + '</b><br>' + data.acceptance[i] + '% accepted';
+      const px = xs(i) * r.width / W, py = ys(data.acceptance[i]) * r.height / H;
+      tip.style.left = Math.min(px + 12, r.width - 130) + 'px'; tip.style.top = Math.max(py - 50, 0) + 'px'; tip.style.opacity = 1;
+    }
+    hit.addEventListener('pointermove', move);
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('opacity', 0); dot.setAttribute('opacity', 0); tip.style.opacity = 0; });
+    document.getElementById('acc-table').innerHTML = '<tr><th>Week</th><th>Accepted</th></tr>' + data.weeks.map((w, i) => '<tr><td>' + fmtWeek(w) + '</td><td>' + data.acceptance[i] + '%</td></tr>').join('');
+  }
+
+  // Small multiples: offers per responder.
+  function drawSparks() {
+    const host = document.getElementById('sparks'); host.innerHTML = '';
+    const max = Math.max(...data.responders.flatMap(r => r.offers));
+    data.responders.forEach(r => {
+      const card = document.createElement('div'); card.className = 'spark' + (r.four ? ' is-four' : '');
+      const first = r.offers[0], last = r.offers[r.offers.length - 1];
+      card.innerHTML = '<div class="nm">' + r.name + '</div><div class="vals">' + first + ' → <b style="color:var(--text)">' + last + '</b> offers/wk</div>';
+      card.title = r.name + ': ' + r.offers.join(', ') + ' offers per week, 29 Jun – 31 Aug';
+      const svg = el('svg', { viewBox: '0 0 100 38', preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+      const n = r.offers.length, xs = i => 2 + i * 96 / (n - 1), ys = v => 34 - v / max * 30;
+      const ri = data.weeks.indexOf('2026-08-10');
+      el('line', { x1: xs(ri), x2: xs(ri), y1: 2, y2: 36, stroke: css('--line'), 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }, svg);
+      el('path', { d: r.offers.map((v, i) => (i ? 'L' : 'M') + xs(i) + ' ' + ys(v)).join(' '), fill: 'none', stroke: r.four ? css('--four') : css('--rest'), 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke', 'stroke-linejoin': 'round' }, svg);
+      card.appendChild(svg); host.appendChild(card);
+    });
+  }
+
+  // Brief scores.
+  function drawScores() {
+    const rows = [
+      ['My brief · Quiet responders', 3], ['Mel_brief · A way back', 6],
+      ['Requisition Approval Chains', 7], ['Handler Phone App', 5],
+      ['Routing Override Audit Log', 5], ['Bulk Callout', 4]
+    ];
+    document.getElementById('scores').innerHTML = rows.map(([n, s]) =>
+      '<div class="score-row"><div><div class="nm">' + n + '</div><div class="meter">' +
+      Array.from({ length: 8 }, (_, i) => '<span class="' + (i < s ? 'on' : '') + '"></span>').join('') +
+      '</div></div><div class="sc">' + s + '/8 ' + (s === 8 ? '🎉' : '😞') + '</div></div>').join('');
+  }
+
+  function drawAll() { drawAcc(); drawSparks(); drawScores(); }
+  drawAll();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
+})();
+</script>
+</body>
+</html>
