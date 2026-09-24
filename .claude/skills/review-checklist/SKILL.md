@@ -1,13 +1,14 @@
 ---
 name: review-checklist
-description: Review a product brief (one-pager, proposal, spec) against four fixed checks before it goes any further — named owner, success measure, scope consistency, and problem-before-fix. Use when the user asks to review, check, vet, or gate a brief, or runs /review-checklist with a file path or pasted text.
+description: Review and score a product brief (one-pager, proposal, spec) out of 8 against four fixed checks before it goes any further — named owner, success measure, scope consistency, and problem-before-fix. Use when the user asks to review, check, score, vet, or gate a brief, or runs /review-checklist with a file path or pasted text.
 argument-hint: <path to brief, several paths, or a folder>
 ---
 
 # Review checklist
 
-Run the same four checks on a brief, every time, and report them in the
-same format. This is a gate, not an edit: judge the brief as written.
+Run the same four checks on a brief, every time, score them against the
+same eight criteria, and report them in the same format. This is a gate,
+not an edit: judge the brief as written.
 
 ## Input
 
@@ -15,57 +16,71 @@ same format. This is a gate, not an edit: judge the brief as written.
   review every brief in it.
 - If the user pasted the brief text instead, review that.
 - If there is no brief, ask for one. Do not guess which file they mean.
-- Read the whole brief before you judge any check.
+- Read the whole brief before you score any criterion.
 - Do not edit the brief. Do not rewrite it for the user.
 
-## The four checks
+## Scoring
 
-Give each check one verdict: **Pass**, **Partial**, or **Fail**.
-Back every verdict with a short quote from the brief, or say "not in the
-brief" when the evidence is absent. Judge only what the brief says — do not
-fill gaps from other files or from what you think the author meant.
+Each check has two criteria. Each criterion scores **1** (met) or **0**
+(not met). There is no half point: if you are unsure, score 0 and say what
+is missing.
 
-### 1. Names who owns it
+- Each check scores 0, 1, or 2: **2 = Pass**, **1 = Partial**,
+  **0 = Fail**.
+- The brief scores out of **8**.
+- Back every criterion with a short quote from the brief, or write
+  "not in the brief". Judge only what the brief says — do not fill gaps
+  from other files or from what you think the author meant.
+- Where a criterion says "needs 1a" (or similar), it scores 0 when that
+  first criterion scores 0.
 
-- **Pass** — a named person or a named team is accountable for the work.
-- **Partial** — ownership is vague or conditional ("TBD", "someone on
-  Supply", "exploring, not staffed"), or it names who builds but not who
-  decides.
-- **Fail** — no owner anywhere. A byline, author line, or department
-  header ("Product, Dispatch") is not an owner.
+## The four checks and their criteria
 
-### 2. Says how we'll know it worked
+### 1. Owner named
 
-- **Pass** — a measurable signal that ties back to the stated problem,
-  with a baseline or a target.
-- **Partial** — a signal exists but has no baseline or target, is hard to
-  measure, or measures activity ("feature shipped", "people use it") and
-  not the outcome.
-- **Fail** — no success measure at all.
+- **1a. A named owner.** The brief names a person or a named team for the
+  work. An author line, a byline, an addressee ("To: Helen"), or a
+  department header ("Product, Dispatch") does not count. People who only
+  give input or an estimate do not count.
+- **1b. The ownership is firm.** Needs 1a. The owner is accountable for
+  decisions now — not "TBD", "exploring", "not yet staffed", "whoever
+  picks it up", and not only the team that builds it.
 
-### 3. Scope at the end matches scope at the start
+### 2. Success measure
 
-Compare what the opening (problem and proposal) says the work is with what
-the closing (scope, next steps, open questions, "and while we're at it")
-says it is.
+- **2a. A measurable signal tied to the problem.** The brief commits to
+  one signal that measures the outcome the problem describes. A list of
+  options not yet chosen, or an activity measure ("feature shipped",
+  "people use it"), does not count.
+- **2b. A baseline or a target.** Needs 2a. The signal has a starting
+  number or a number to reach.
 
-- **Pass** — the same work from start to end.
-- **Partial** — small drift: one extra item added late, or a need raised in
-  the problem that the scope later excludes without saying so.
-- **Fail** — the brief grows (several additions after the core ask), or it
-  shrinks so that the stated problem is no longer solved, or there is no
-  scope statement to compare against.
+### 3. Scope holds
 
-List each addition or dropped item by name.
+- **3a. Scope is stated.** The brief says what the work is, and what it
+  is not (a scope section, an in/out list, or "that's the whole ask").
+- **3b. The end matches the start.** Needs 3a. Compare the opening
+  (problem and proposal) with the closing (scope, next steps, open
+  questions). Score 0 if the closing adds work after the core ask, drops
+  a need the problem raised, or contradicts the stated scope. List each
+  addition, drop, or conflict by name.
 
-### 4. Explains the problem before it proposes a fix
+### 4. Problem before fix
 
-- **Pass** — a problem section comes before the proposal, and it describes
-  who hurts and how, in terms that do not depend on the fix.
-- **Partial** — the problem exists but comes after the proposal, or it is
-  written as "we lack <the solution>".
-- **Fail** — no problem statement; the brief opens with and only argues
-  for a solution.
+- **4a. The problem comes first.** A problem statement appears before the
+  proposal.
+- **4b. The problem stands on its own.** It says who hurts and how, in
+  terms that do not depend on the fix — not "we lack <the solution>".
+
+## Verdict bands
+
+| Score | Verdict | Meaning |
+|---|---|---|
+| 8/8 | **Ready** | All four checks pass. It can move on. |
+| 5–7 | **Not ready — small fixes** | The author can fix it in the brief. |
+| 0–4 | **Not ready — rework** | Something basic is missing. Send it back. |
+
+Only 8/8 is Ready. A score of 7 is still a gate stop.
 
 ## Output format
 
@@ -74,35 +89,31 @@ Use exactly this layout for each brief. Keep it short.
 ```
 ## <Brief title> — <file name>
 
-**Verdict: Ready | Not ready** (<n>/4 pass)
+**Score: <n>/8 — <verdict>**
 
-| Check | Result | Evidence |
-|---|---|---|
-| Owner named | Pass/Partial/Fail | "<quote>" or not in the brief |
-| Success measure | Pass/Partial/Fail | "<quote>" |
-| Scope holds | Pass/Partial/Fail | "<quote from start>" vs "<quote from end>" |
-| Problem before fix | Pass/Partial/Fail | <section order + quote> |
+| Check | Criteria met | Score | Evidence |
+|---|---|---|---|
+| Owner named | 1a ✓/✗ · 1b ✓/✗ | <0–2> Pass/Partial/Fail | "<quote>" or not in the brief |
+| Success measure | 2a ✓/✗ · 2b ✓/✗ | <0–2> Pass/Partial/Fail | "<quote>" |
+| Scope holds | 3a ✓/✗ · 3b ✓/✗ | <0–2> Pass/Partial/Fail | "<quote from start>" vs "<quote from end>" |
+| Problem before fix | 4a ✓/✗ · 4b ✓/✗ | <0–2> Pass/Partial/Fail | <section order + quote> |
 
 **To fix before it moves on**
-- <one line per Partial or Fail: what is missing, and the question the
-  author must answer>
+- <one line per criterion scored 0: the criterion ID, what is missing, and
+  the question the author must answer>
 ```
 
-Rules for the verdict:
-
-- **Ready** only when all four checks pass.
-- Any Partial or Fail makes it **Not ready**.
-- If all four pass, write "Nothing to fix." under the fix heading.
+If the score is 8/8, write "Nothing to fix." under the fix heading.
 
 When you review more than one brief, put a summary table first — one row
-per brief, one column per check, plus the verdict — then the detail for
-each brief in the same order.
+per brief, one column per check with its 0–2 score, the total out of 8,
+and the verdict — then the detail for each brief in the same order.
 
 ## Do not
 
-- Add checks beyond these four. Other issues (tone, length, feasibility)
-  go in one optional line at the end, headed "Outside the checklist", and
-  only when they are serious.
-- Soften a verdict because the idea is good, or harden it because the idea
-  is weak. The checklist judges the brief, not the idea.
+- Add checks or criteria beyond these eight. Other issues (tone, length,
+  feasibility) go in one optional line at the end, headed "Outside the
+  checklist", and only when they are serious. They never change the score.
+- Give a point because the idea is good, or hold one back because the idea
+  is weak. The checklist scores the brief, not the idea.
 - Grade on a curve across several briefs. Each brief stands alone.
