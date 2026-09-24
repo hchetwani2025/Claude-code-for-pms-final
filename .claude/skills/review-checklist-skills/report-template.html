@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brief Review</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --text: #1d1d1b; --muted: #66665f;
+    --line: #e2e2dc; --pass: #1f7a4d; --partial: #a86a00; --fail: #b3261e;
+    --pass-bg: #e6f4ec; --partial-bg: #fdf2dc; --fail-bg: #fbe7e5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --card: #1f1f1d; --text: #ecece8; --muted: #a3a39b;
+      --line: #33332f; --pass: #5fc58f; --partial: #e0a53a; --fail: #f07b72;
+      --pass-bg: #173325; --partial-bg: #3a2c10; --fail-bg: #3d1a17;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 0; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 13px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .head .file { color: var(--muted); font-size: 13px; font-family: ui-monospace, monospace; }
+  .score {
+    margin-left: auto; display: flex; align-items: center; gap: 12px;
+  }
+  .score .num { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .score .num small { font-size: 16px; color: var(--muted); font-weight: 500; }
+  .emoji { font-size: 36px; display: inline-block; }
+  .emoji.sad { animation: droop 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+  .emoji.happy { animation: hop 0.9s ease-in-out infinite; }
+  @keyframes droop { 0%,100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(-8deg) translateY(4px); } }
+  @keyframes hop { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.1); } }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .pill.pass { background: var(--pass-bg); color: var(--pass); }
+  .pill.partial { background: var(--partial-bg); color: var(--partial); }
+  .pill.fail { background: var(--fail-bg); color: var(--fail); }
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; border-top: 0; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .crit { white-space: nowrap; font-family: ui-monospace, monospace; font-size: 13px; }
+  .crit .y { color: var(--pass); } .crit .n { color: var(--fail); }
+  h3 { font-size: 14px; margin: 18px 0 6px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  .outside { margin-top: 12px; color: var(--muted); font-size: 14px; }
+  canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+  @media (prefers-reduced-motion: reduce) {
+    .emoji.sad, .emoji.happy { animation: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<main id="app"></main>
+
+<!-- The skill fills in only this block. Scores and verdicts are computed below. -->
+<script id="review-data" type="application/json">
+{
+  "date": "YYYY-MM-DD",
+  "briefs": [
+    {
+      "title": "Brief title",
+      "file": "path/to/brief",
+      "checks": [
+        { "name": "Owner named",        "criteria": [{"id": "1a", "met": true}, {"id": "1b", "met": true}], "evidence": "\"quote\"" },
+        { "name": "Success measure",    "criteria": [{"id": "2a", "met": true}, {"id": "2b", "met": true}], "evidence": "\"quote\"" },
+        { "name": "Scope holds",        "criteria": [{"id": "3a", "met": true}, {"id": "3b", "met": true}], "evidence": "\"quote\" vs \"quote\"" },
+        { "name": "Problem before fix", "criteria": [{"id": "4a", "met": true}, {"id": "4b", "met": true}], "evidence": "section order + quote" }
+      ],
+      "fixes": [],
+      "outside": ""
+    }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  const data = JSON.parse(document.getElementById('review-data').textContent);
+  const app = document.getElementById('app');
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // Scoring rules from SKILL.md: a "b" criterion counts only when its "a" criterion is met.
+  function scoreCheck(check) {
+    const a = !!check.criteria[0].met;
+    const b = a && !!check.criteria[1].met;
+    return { a, b, score: (a ? 1 : 0) + (b ? 1 : 0) };
+  }
+  const result = s => s === 2 ? ['Pass', 'pass'] : s === 1 ? ['Partial', 'partial'] : ['Fail', 'fail'];
+  const verdict = t => t === 8 ? 'Ready' : t >= 5 ? 'Not ready — small fixes' : 'Not ready — rework';
+
+  const briefs = data.briefs.map(b => {
+    const checks = b.checks.map(c => ({ ...c, ...scoreCheck(c) }));
+    const total = checks.reduce((n, c) => n + c.score, 0);
+    return { ...b, checks, total };
+  });
+
+  let html = `<h1>Brief review</h1><p class="sub">review-checklist-skills · ${esc(data.date)} · ${briefs.length} brief${briefs.length === 1 ? '' : 's'}</p>`;
+
+  if (briefs.length > 1) {
+    html += `<section class="card"><h2>Summary</h2><div class="table-wrap"><table>
+      <tr><th>Brief</th>${briefs[0].checks.map(c => `<th>${esc(c.name)}</th>`).join('')}<th>Score</th><th>Verdict</th></tr>
+      ${briefs.map(b => `<tr><td>${esc(b.title)}</td>${b.checks.map(c => `<td class="num">${c.score}</td>`).join('')}
+        <td class="num"><b>${b.total}/8</b></td><td>${b.total === 8 ? '🎉' : '😞'} ${verdict(b.total)}</td></tr>`).join('')}
+    </table></div></section>`;
+  }
+
+  for (const b of briefs) {
+    const ready = b.total === 8;
+    html += `<section class="card">
+      <div class="head">
+        <div><h2>${esc(b.title)}</h2><div class="file">${esc(b.file)}</div></div>
+        <div class="score">
+          <span class="emoji ${ready ? 'happy' : 'sad'}" aria-hidden="true">${ready ? '🎉' : '😞'}</span>
+          <div><div class="num">${b.total}<small>/8</small></div>
+          <span class="pill ${ready ? 'pass' : b.total >= 5 ? 'partial' : 'fail'}">${verdict(b.total)}</span></div>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <tr><th>Check</th><th>Criteria met</th><th>Score</th><th>Evidence</th></tr>
+        ${b.checks.map(c => {
+          const [label, cls] = result(c.score);
+          const mark = (id, ok) => `${esc(id)} <span class="${ok ? 'y' : 'n'}">${ok ? '✓' : '✗'}</span>`;
+          return `<tr><td>${esc(c.name)}</td>
+            <td class="crit">${mark(c.criteria[0].id, c.a)} · ${mark(c.criteria[1].id, c.b)}</td>
+            <td><span class="pill ${cls}">${c.score} ${label}</span></td>
+            <td>${esc(c.evidence)}</td></tr>`;
+        }).join('')}
+      </table></div>
+      <h3>To fix before it moves on</h3>
+      ${ready || !b.fixes.length ? '<p>Nothing to fix.</p>' : `<ul>${b.fixes.map(f => `<li>${esc(f)}</li>`).join('')}</ul>`}
+      ${b.outside ? `<p class="outside"><b>Outside the checklist:</b> ${esc(b.outside)}</p>` : ''}
+    </section>`;
+  }
+  app.innerHTML = html;
+
+  // Confetti when any brief scores 8/8.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!briefs.some(b => b.total === 8) || reduce) return;
+  const cv = document.getElementById('confetti'), ctx = cv.getContext('2d');
+  const colors = ['#e63946', '#f4a261', '#2a9d8f', '#457b9d', '#e9c46a', '#9b5de5'];
+  const resize = () => { cv.width = innerWidth; cv.height = innerHeight; };
+  resize(); addEventListener('resize', resize);
+  const bits = Array.from({ length: 180 }, () => ({
+    x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.6,
+    w: 6 + Math.random() * 6, h: 8 + Math.random() * 8,
+    vx: -2 + Math.random() * 4, vy: 2 + Math.random() * 3,
+    r: Math.random() * Math.PI, vr: -0.2 + Math.random() * 0.4,
+    c: colors[Math.floor(Math.random() * colors.length)]
+  }));
+  const end = performance.now() + 4500;
+  (function frame(t) {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (const p of bits) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+    }
+    if (t < end) requestAnimationFrame(frame); else ctx.clearRect(0, 0, cv.width, cv.height);
+  })(performance.now());
+})();
+</script>
+</body>
+</html>

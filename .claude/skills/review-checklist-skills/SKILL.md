@@ -121,6 +121,29 @@ When you review more than one brief, put a summary table first — one row
 per brief, one column per check with its 0–2 score, the total out of 8,
 and the verdict — then the detail for each brief in the same order.
 
+## HTML report with animation
+
+After the text review, also write an HTML report. It plays falling confetti
+when a brief scores 8/8, and shows a drooping 😞 for a lower score.
+
+1. Copy `report-template.html` (in this skill's folder) to
+   `scratch/review-checklist/<brief-file-name>-review.html` in the project.
+   For several briefs, use `scratch/review-checklist/<folder-name>-review.html`.
+   Make the `scratch/review-checklist/` folder if it does not exist.
+2. In the copy, replace only the JSON inside
+   `<script id="review-data">`: today's date, and one entry per brief with
+   its title, file, the met flag (true/false) for each of the eight
+   criteria, the evidence text, the fix lines, and the "Outside the
+   checklist" line (empty string if none). Use the same content as the
+   text review.
+3. Do not type scores or verdicts into the JSON. The page computes them
+   from the met flags with the same rules as this file, so the page and
+   the text review always agree. Check that the page total matches your
+   text score.
+4. Do not change the template's HTML, CSS, or script.
+5. Send the report to the user so it renders (with SendUserFile, display
+   "render") if that tool is available. If not, give the file path.
+
 ## Do not
 
 - Add checks or criteria beyond these eight. Other issues (tone, length,
