@@ -66,3 +66,11 @@ Other open items from the handover:
 ### Reference material in this repo
 
 `00-rook/company/` holds the source documents above plus release history and the Q3 roadmap. `00-rook/feedback/` holds four interviews and 25 tickets (Module 2). `00-rook/data/callout-history.csv` is the weekly pings-sent/pings-taken export by responder and handler (Module 3). `00-rook/code/dispatch-routing/` is the actual routing code — owner Wen Li, ask Marcus if she's out (Module 4).
+
+### Brief review habit (Module 6)
+
+- My brief gate is the `review-checklist-skills` skill (`.claude/skills/review-checklist-skills/`). It scores a brief out of 8: owner, success measure, scope holds, problem before fix, two yes/no criteria each. Only 8/8 is Ready. 1b/2b/3b need their "a"; 4b does not. It also writes an animated HTML report to `scratch/review-checklist/` (gitignored). Skill names must use hyphens, not underscores.
+- My Module 5 brief ("Quiet responders", `05-super-speed/brief.md` plus one-pager exports and prototypes) is only on branch `claude/admiring-davinci-v1wwxv`, not on `main`. It scored 3/8: no named owner, no chosen success measure, and "I'm ready" conflicts with its own "doesn't touch scoring" scope.
+- `Mel_brief.md` ("A way back": score decay/recovery) came in as an upload and is not in the repo. It scored 6/8; the only gap is a named, accountable owner.
+- Baseline scores for `06-sidekicks/briefs/`: Bulk Callout 4, Handler Phone App 5, Requisition Approval Chains 7, Routing Override Audit Log 5. None is Ready.
+- The routine "Review checklist runner" runs the skill on `06-sidekicks/briefs/` every Monday 09:00 UTC in a fresh session (push + email when done). It pulls the skill from branch `claude/magical-heisenberg-9xkpa5`, so skill changes must be pushed there. My time zone is not confirmed.
